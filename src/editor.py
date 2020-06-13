@@ -82,12 +82,8 @@ class Editor:
         displayed_lines = self.lines[self.scrtop : min(len(self.lines), self.scrbottom)]
         for index, line in enumerate(displayed_lines):
             self.stdscr.addstr(' ')
-            if len(line) < self.scrleft:
-                pass
-            elif len(line) < self.scrright - 1:
-                self.stdscr.addstr(line[self.scrleft : ])
-            else:
-                self.stdscr.addstr(line[self.scrleft : self.scrright - 1])
+            if len(line) >= self.scrleft:
+                self.stdscr.addstr(line[self.scrleft : min(len(line), self.scrright - 1)])
             if index != len(displayed_lines) - 1:
                 self.stdscr.addstr('\n')
         self.stdscr.move(self.caret_y - self.scrtop + 2, self.caret_x - self.scrleft + 1)
@@ -169,7 +165,7 @@ class Editor:
                 self.stdscr.erase()
                 self.stdscr.addstr(' Confirm that you want to save the file (type \'save\'): ')
                 self.stdscr.refresh()
-                for desired_key in ['s', 'a', 'v', 'e']:
+                for desired_key in 'save':
                     cur_key = self.stdscr.getkey()
                     self.stdscr.addstr(cur_key)
                     self.stdscr.refresh()
