@@ -220,7 +220,7 @@ class Editor:
 
 def main(stdscr):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-path', help='path to file being edited')
+    parser.add_argument('-path', '-p', help='path to file being edited')
     args = parser.parse_args()
     try:
         editor = Editor(stdscr, args)
