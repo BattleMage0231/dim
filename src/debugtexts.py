@@ -1,7 +1,11 @@
+HELLO_WORLD = (
+    'Hello World',
+"""Hello, World!"""
+)
+
 LOREM_IPSUM = (
     'Lorem Ipsum',
-    """
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ac sagittis sapien, ac vehicula ante. Phasellus tincidunt accumsan elit at scelerisque. Pellentesque dapibus, orci non convallis tincidunt, lectus massa faucibus diam, nec porta turpis diam vel elit. Nulla ultrices ante eget leo feugiat aliquam. Mauris pulvinar blandit urna, at gravida dolor tincidunt nec. Fusce non gravida justo, vitae aliquet urna. Etiam id velit at lectus consectetur tincidunt. Proin cursus nisi a justo condimentum, vitae sollicitudin est sodales. Vivamus convallis, ex sed luctus cursus, nisl lorem egestas dui, at dictum magna tellus a ex. Maecenas rhoncus, tortor non faucibus mattis, augue purus congue purus, at elementum leo eros ac felis. Quisque aliquet aliquet nisl, vitae tempor nibh porta sed. Praesent aliquam vel arcu sit amet eleifend. Curabitur convallis molestie arcu sed vulputate.
+"""Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ac sagittis sapien, ac vehicula ante. Phasellus tincidunt accumsan elit at scelerisque. Pellentesque dapibus, orci non convallis tincidunt, lectus massa faucibus diam, nec porta turpis diam vel elit. Nulla ultrices ante eget leo feugiat aliquam. Mauris pulvinar blandit urna, at gravida dolor tincidunt nec. Fusce non gravida justo, vitae aliquet urna. Etiam id velit at lectus consectetur tincidunt. Proin cursus nisi a justo condimentum, vitae sollicitudin est sodales. Vivamus convallis, ex sed luctus cursus, nisl lorem egestas dui, at dictum magna tellus a ex. Maecenas rhoncus, tortor non faucibus mattis, augue purus congue purus, at elementum leo eros ac felis. Quisque aliquet aliquet nisl, vitae tempor nibh porta sed. Praesent aliquam vel arcu sit amet eleifend. Curabitur convallis molestie arcu sed vulputate.
 
 Nullam ut augue sit amet leo elementum fringilla. Cras sed sodales lectus. Ut semper facilisis elementum. Nulla facilisi. Maecenas mollis efficitur ullamcorper. Nulla venenatis mi at nunc luctus lobortis. Nulla in pretium nulla. Aliquam nec commodo nulla.
 
@@ -19,8 +23,7 @@ Cras ultrices, leo vel semper venenatis, est leo convallis tortor, at egestas ex
 
 Nulla sit amet aliquam augue, euismod volutpat lacus. Maecenas faucibus congue turpis nec dignissim. Proin et nibh pulvinar, viverra elit eget, aliquam mi. Duis eget ante velit. Aliquam accumsan interdum sapien, sit amet dignissim dui consequat ac. Cras vehicula pellentesque mauris in consectetur. Donec imperdiet neque euismod finibus scelerisque. Curabitur at ligula nulla. Curabitur ultrices sollicitudin mi ut dapibus. Maecenas eu metus dolor. Phasellus dictum justo arcu, in vehicula mi scelerisque a. Mauris ac rhoncus metus. Suspendisse vel libero metus. Maecenas sit amet vestibulum leo. Aenean porta odio eu dictum eleifend. Sed viverra fringilla sem, eget auctor ligula tincidunt quis.
 
-Vivamus id lectus nec purus feugiat accumsan. Maecenas sit amet placerat eros. Nam eleifend leo id risus tincidunt, vel fringilla lorem suscipit. Phasellus efficitur lobortis urna, sit amet semper purus bibendum ut. Donec porttitor lorem in ipsum sodales, id interdum turpis rhoncus. Suspendisse pharetra ex ut aliquam consectetur. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Pellentesque ligula arcu, congue viverra blandit in, consequat nec dui. Etiam feugiat posuere augue id congue.
-    """
+Vivamus id lectus nec purus feugiat accumsan. Maecenas sit amet placerat eros. Nam eleifend leo id risus tincidunt, vel fringilla lorem suscipit. Phasellus efficitur lobortis urna, sit amet semper purus bibendum ut. Donec porttitor lorem in ipsum sodales, id interdum turpis rhoncus. Suspendisse pharetra ex ut aliquam consectetur. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Pellentesque ligula arcu, congue viverra blandit in, consequat nec dui. Etiam feugiat posuere augue id congue."""
 )
 
 NONE = (
@@ -29,6 +32,7 @@ NONE = (
 )
 
 TEXT_LIST = [
+    HELLO_WORLD,
     LOREM_IPSUM,
     NONE
 ]
