@@ -6,6 +6,8 @@ import time
 import traceback
 from curses import *
 
+import debugtexts
+
 class Constants:
     ALLOWED_CHARS = string.ascii_letters + string.digits + string.punctuation + ' '
     BG_COLOR = (1, 7, 233)
@@ -14,6 +16,7 @@ class Constants:
     FILE_COLOR = (4, 200, 237)
     MODE_COLOR = (5, 35, 237)
     CUR_COMMAND_COLOR = (6, 150, 237)
+    HIGHLIGHT_COLOR = (7, 233, 7)
     MODE_INSERT = 'INSERT'
     MODE_COMMAND = 'COMMAND'
 
@@ -31,6 +34,7 @@ class Editor:
         init_pair(*Constants.FILE_COLOR)
         init_pair(*Constants.MODE_COLOR)
         init_pair(*Constants.CUR_COMMAND_COLOR)
+        init_pair(*Constants.HIGHLIGHT_COLOR)
         # set initial values
         self.height, self.width = stdscr.getmaxyx()
         self.scrtop, self.scrbottom = 0, self.height - 2 # exclusive
@@ -147,8 +151,33 @@ class Editor:
     def launch(self):
         self.stdscr.bkgd(' ', color_pair(1) | A_BOLD)
         if self.debug_mode:
-            self.stdscr.addstr(' You have launched the editor in debug mode...')
-            self.stdscr.getkey()
+            if self.args.path is None:
+                cur_index = 0
+                key = None
+                while key != '\n' and key != chr(13):
+                    if key == 'KEY_UP':
+                        cur_index -= 1
+                        cur_index = max(cur_index, 0)
+                    elif key == 'KEY_DOWN':
+                        cur_index += 1
+                        cur_index = min(cur_index, len(debugtexts.TEXT_LIST) - 1)
+                    self.stdscr.erase()
+                    self.stdscr.addstr(' You have launched the editor in debug mode.')
+                    self.stdscr.addstr('\n\n')
+                    self.stdscr.addstr(' Test documents:')
+                    self.stdscr.addstr('\n')
+                    for index, value in enumerate(debugtexts.TEXT_LIST):
+                        text_name, _ = value 
+                        self.stdscr.addstr('\n ')
+                        self.stdscr.addstr(text_name, color_pair(7 if index == cur_index else 1))
+                    self.stdscr.addstr('\n\n ') 
+                    key = self.stdscr.getkey()      
+                self.lines = debugtexts.TEXT_LIST[cur_index][1].split('\n')
+            else:
+                self.stdscr.addstr(' You have launched the editor in debug mode.')
+                self.stdscr.addstr('\n\n')
+                self.stdscr.addstr(' Press any key to continue... ')
+                self.stdscr.getkey()
         self.display_text()
         while True:
             key = self.stdscr.getkey()
