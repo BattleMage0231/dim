@@ -13,6 +13,7 @@ class Constants:
     DIM_COLOR = (3, 221, 237)
     FILE_COLOR = (4, 200, 237)
     MODE_COLOR = (5, 35, 237)
+    CUR_COMMAND_COLOR = (6, 150, 237)
     MODE_INSERT = 'INSERT'
     MODE_COMMAND = 'COMMAND'
 
@@ -29,6 +30,7 @@ class Editor:
         init_pair(*Constants.DIM_COLOR)
         init_pair(*Constants.FILE_COLOR)
         init_pair(*Constants.MODE_COLOR)
+        init_pair(*Constants.CUR_COMMAND_COLOR)
         # set initial values
         self.height, self.width = stdscr.getmaxyx()
         self.scrtop, self.scrbottom = 0, self.height - 2 # exclusive
@@ -37,6 +39,7 @@ class Editor:
         self.lines = ['']
         self.file_name = 'None'
         self.mode = Constants.MODE_COMMAND
+        self.cur_command = ''
         # try to find a file
         try:
             if args.path is not None:
@@ -56,8 +59,10 @@ class Editor:
         self.stdscr.addstr(' Dim v1', color_pair(3))
         self.stdscr.addstr(' ' * 5, color_pair(2))
         self.stdscr.addstr('Editing ' + self.file_name, color_pair(4))
+        self.stdscr.addstr(' ' * 20, color_pair(2))
+        self.stdscr.addstr(self.cur_command, color_pair(6))
         self.stdscr.addstr(
-            ' ' * (self.width - 36 - len(self.file_name) - len(self.mode)),
+            ' ' * (self.width - 56 - len(self.file_name) - len(self.mode) - len(self.cur_command)),
             color_pair(2)
         )
         self.stdscr.addstr('Mode: ' + self.mode, color_pair(5))
@@ -158,31 +163,11 @@ class Editor:
         if key == chr(27):
             # escape
             os._exit(1)
-        elif key == 'i':
-            self.mode = Constants.MODE_INSERT
-        elif key == 's':
-            if self.debug_mode:
-                self.stdscr.erase()
-                self.stdscr.addstr(' Confirm that you want to save the file (type \'save\'): ')
-                self.stdscr.refresh()
-                for desired_key in 'save':
-                    cur_key = self.stdscr.getkey()
-                    self.stdscr.addstr(cur_key)
-                    self.stdscr.refresh()
-                    if cur_key != desired_key:
-                        return
-            try:
-                if self.args.path is not None:
-                    if not os.path.isfile(self.args.path): 
-                        raise FileNotFoundError
-                    with open(self.args.path, 'w') as edit_file:
-                        edit_file.write('\n'.join(self.lines))
-            except (FileNotFoundError, PermissionError, OSError):
-                print('The current file can no longer be found.')
-                os._exit(1)
-            except UnicodeDecodeError:
-                print('The encoding of the file is not supported.')
-                os._exit(1)
+        elif key in Constants.ALLOWED_CHARS:
+            if self.width - 57 - len(self.file_name) - len(self.mode) - len(self.cur_command) > 0:
+                self.cur_command += key
+        elif key == '\b' or key == 'KEY_BACKSPACE':
+            self.cur_command = self.cur_command[ : -1]
         elif key == 'KEY_RESIZE':
             pass
         elif key == 'KEY_LEFT':
@@ -207,6 +192,35 @@ class Editor:
         elif key == 'KEY_END':
             # go to right
             self.caret_x = len(self.lines[self.caret_y])
+        elif key == '\n' or key == chr(13):
+            try:
+                if self.cur_command == 'i':
+                    self.mode = Constants.MODE_INSERT
+                elif self.cur_command == 's':
+                    if self.debug_mode:
+                        self.stdscr.erase()
+                        self.stdscr.addstr(' Confirm that you want to save the file (type \'save\'): ')
+                        self.stdscr.refresh()
+                        for desired_key in 'save':
+                            cur_key = self.stdscr.getkey()
+                            self.stdscr.addstr(cur_key)
+                            self.stdscr.refresh()
+                            if cur_key != desired_key:
+                                return
+                    try:
+                        if self.args.path is not None:
+                            if not os.path.isfile(self.args.path): 
+                                raise FileNotFoundError
+                            with open(self.args.path, 'w') as edit_file:
+                                edit_file.write('\n'.join(self.lines))
+                    except (FileNotFoundError, PermissionError, OSError):
+                        print('The current file can no longer be found.')
+                        os._exit(1)
+                    except UnicodeDecodeError:
+                        print('The encoding of the file is not supported.')
+                        os._exit(1)
+            finally:
+                self.cur_command = ''
 
     def parse_insert(self, key):
         if key == chr(27):
