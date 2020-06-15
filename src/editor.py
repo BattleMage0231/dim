@@ -6,7 +6,7 @@ import time
 import traceback
 from curses import *
 
-import debugtexts
+import debug
 
 class Constants:
     ALLOWED_CHARS = string.ascii_letters + string.digits + string.punctuation + ' '
@@ -19,6 +19,9 @@ class Constants:
     HIGHLIGHT_COLOR = (7, 233, 7)
     MODE_INSERT = 'INSERT'
     MODE_COMMAND = 'COMMAND'
+    MODE_SELECT = 'SELECT'
+    DIRECTION_BEFORE = 0
+    DIRECTION_AFTER = 1
 
 class Editor:
     def __init__(self, stdscr, args):
@@ -40,6 +43,10 @@ class Editor:
         self.scrtop, self.scrbottom = 0, self.height - 2 # exclusive
         self.scrleft, self.scrright = 0, self.width - 1 # exclusive
         self.caret_y, self.caret_x = 0, 0
+        self.text_selected = False
+        self.select_start_x, self.select_start_y = -1, -1
+        self.select_end_x, self.select_end_y = -1, -1
+        self.selecting_direction = Constants.DIRECTION_BEFORE
         self.lines = ['']
         self.file_name = 'None'
         self.mode = Constants.MODE_COMMAND
@@ -92,7 +99,87 @@ class Editor:
         for index, line in enumerate(displayed_lines):
             self.stdscr.addstr(' ')
             if len(line) >= self.scrleft:
-                self.stdscr.addstr(line[self.scrleft : min(len(line), self.scrright - 1)])
+                displayed_line = line[self.scrleft : min(len(line), self.scrright - 1)]
+                if self.text_selected:
+                    if self.select_start_y < self.scrtop + index:
+                        if self.select_end_y > self.scrtop + index:
+                            self.stdscr.addstr(displayed_line, color_pair(7))
+                        elif self.select_end_y == self.scrtop + index:
+                            if self.select_start_y == self.scrtop + index:
+                                if self.select_start_x - self.scrleft < 0:
+                                    if self.select_end_x - self.scrleft < 0:
+                                        self.stdscr.addstr(displayed_line)
+                                    elif self.select_end_x - self.scrleft >= self.width:
+                                        self.stdscr.addstr(displayed_line, color_pair(7))
+                                    else:
+                                        self.stdscr.addstr(
+                                            displayed_line[ : self.select_end_x - self.scrleft + 1],
+                                            color_pair(7)
+                                        )
+                                        self.stdscr.addstr(displayed_line[self.select_end_x - self.scrleft + 1 : ])
+                                elif self.select_start_x - self.scrleft >= self.width:
+                                    pass
+                                else:
+                                    if self.select_end_x - self.scrleft >= self.width:
+                                        self.stdscr.addstr(displayed_line[ : self.select_start_x - self.scrleft])
+                                        self.stdscr.addstr(
+                                            displayed_line[self.select_start_x - self.scrleft : ],
+                                            color_pair(7)
+                                        )
+                                    else:
+                                        self.stdscr.addstr(displayed_line[ : self.select_start_x - self.scrleft])
+                                        self.stdscr.addstr(
+                                            displayed_line[self.select_start_x - self.scrleft : self.select_end_x - self.scrleft + 1],
+                                            color_pair(7)
+                                        )
+                                        self.stdscr.addstr(displayed_line[self.select_end_x - self.scrleft + 1 : ])
+                            else:
+                                self.stdscr.addstr(
+                                    displayed_line[ : self.select_end_x + 1 - self.scrleft],
+                                    color_pair(7)
+                                )
+                                self.stdscr.addstr(displayed_line[self.select_end_x + 1 - self.scrleft : ])
+                        else:
+                            self.stdscr.addstr(displayed_line)
+                    elif self.select_start_y == self.scrtop + index:
+                        if self.select_end_y == self.scrtop + index:
+                            if self.select_start_x - self.scrleft < 0:
+                                if self.select_end_x - self.scrleft < 0:
+                                    self.stdscr.addstr(displayed_line)
+                                elif self.select_end_x - self.scrleft >= self.width:
+                                    self.stdscr.addstr(displayed_line, color_pair(7))
+                                else:
+                                    self.stdscr.addstr(
+                                        displayed_line[ : self.select_end_x - self.scrleft + 1],
+                                        color_pair(7)
+                                    )
+                                    self.stdscr.addstr(displayed_line[self.select_end_x - self.scrleft + 1 : ])
+                            elif self.select_start_x - self.scrleft >= self.width:
+                                pass
+                            else:
+                                if self.select_end_x - self.scrleft >= self.width:
+                                    self.stdscr.addstr(displayed_line[ : self.select_start_x - self.scrleft])
+                                    self.stdscr.addstr(
+                                        displayed_line[self.select_start_x - self.scrleft : ],
+                                        color_pair(7)
+                                    )
+                                else:
+                                    self.stdscr.addstr(displayed_line[ : self.select_start_x - self.scrleft])
+                                    self.stdscr.addstr(
+                                        displayed_line[self.select_start_x - self.scrleft : self.select_end_x - self.scrleft + 1],
+                                        color_pair(7)
+                                    )
+                                    self.stdscr.addstr(displayed_line[self.select_end_x - self.scrleft + 1 : ])
+                        else:
+                            self.stdscr.addstr(displayed_line[ : self.select_start_x - self.scrleft])
+                            self.stdscr.addstr(
+                               displayed_line[self.select_start_x - self.scrleft : ],
+                               color_pair(7)
+                            )
+                    else:
+                        self.stdscr.addstr(displayed_line)
+                else:
+                    self.stdscr.addstr(displayed_line)
             if index != len(displayed_lines) - 1:
                 self.stdscr.addstr('\n')
         self.stdscr.move(self.caret_y - self.scrtop + 2, self.caret_x - self.scrleft + 1)
@@ -160,19 +247,19 @@ class Editor:
                         cur_index = max(cur_index, 0)
                     elif key == 'KEY_DOWN':
                         cur_index += 1
-                        cur_index = min(cur_index, len(debugtexts.TEXT_LIST) - 1)
+                        cur_index = min(cur_index, len(debug.TEXT_LIST) - 1)
                     self.stdscr.erase()
                     self.stdscr.addstr(' You have launched the editor in debug mode.')
                     self.stdscr.addstr('\n\n')
                     self.stdscr.addstr(' Test documents:')
                     self.stdscr.addstr('\n')
-                    for index, value in enumerate(debugtexts.TEXT_LIST):
+                    for index, value in enumerate(debug.TEXT_LIST):
                         text_name, _ = value 
                         self.stdscr.addstr('\n ')
                         self.stdscr.addstr(text_name, color_pair(7 if index == cur_index else 1))
                     self.stdscr.addstr('\n\n ') 
                     key = self.stdscr.getkey()      
-                self.lines = debugtexts.TEXT_LIST[cur_index][1].split('\n')
+                self.lines = debug.TEXT_LIST[cur_index][1].split('\n')
             else:
                 self.stdscr.addstr(' You have launched the editor in debug mode.')
                 self.stdscr.addstr('\n\n')
@@ -184,8 +271,10 @@ class Editor:
             self.height, self.width = self.stdscr.getmaxyx()
             if self.mode == Constants.MODE_COMMAND:
                 self.parse_command(key)
-            else:
+            elif self.mode == Constants.MODE_INSERT:
                 self.parse_insert(key)
+            elif self.mode == Constants.MODE_SELECT:
+                self.parse_select(key)
             self.display_text()
 
     def parse_command(self, key):
@@ -224,6 +313,8 @@ class Editor:
         elif key == '\n' or key == chr(13):
             try:
                 if self.cur_command == 'i':
+                    if self.text_selected:
+                        self.text_selected = False
                     self.mode = Constants.MODE_INSERT
                 elif self.cur_command == 's':
                     if self.debug_mode:
@@ -248,6 +339,11 @@ class Editor:
                     except UnicodeDecodeError:
                         print('The encoding of the file is not supported.')
                         os._exit(1)
+                elif self.cur_command == 'v':
+                    self.mode = Constants.MODE_SELECT
+                    self.select_start_y, self.select_start_x = self.caret_y, self.caret_x
+                    self.select_end_y, self.select_end_x = self.caret_y, self.caret_x
+                    self.text_selected = True
             finally:
                 self.cur_command = ''
 
@@ -314,6 +410,69 @@ class Editor:
             line = line[ : self.caret_x] + key + line[self.caret_x : ]
             self.lines[self.caret_y] = line
             self.caret_x += 1 
+
+    def calculate_selection(self):
+        y, x = self.caret_y, self.caret_x
+        # both inclusive
+        s_y, s_x = self.select_start_y, self.select_start_x
+        e_y, e_x = self.select_end_y, self.select_end_x
+        if y < s_y:
+            self.select_start_y, self.select_start_x = y, x
+            self.selecting_direction = Constants.DIRECTION_BEFORE
+        elif y == s_y and x < s_x:
+            self.select_start_y, self.select_start_x = y, x
+            self.selecting_direction = Constants.DIRECTION_BEFORE
+        elif y > e_y:
+            self.select_end_y, self.select_end_x = y, x
+            self.selecting_direction = Constants.DIRECTION_AFTER
+        elif y == e_y and x > e_x:
+            self.select_end_y, self.select_end_x = y, x
+            self.selecting_direction = Constants.DIRECTION_AFTER
+        elif self.selecting_direction == Constants.DIRECTION_BEFORE:
+            self.select_start_y, self.select_start_x = y, x
+        elif self.selecting_direction == Constants.DIRECTION_AFTER:
+            self.select_end_y, self.select_end_x = y, x
+
+    def parse_select(self, key):
+        if key == chr(27):
+            # escape
+            self.mode = Constants.MODE_COMMAND
+        elif key == 'KEY_RESIZE':
+            pass
+        elif key == 'KEY_LEFT' or key == '\b' or key == 'KEY_BACKSPACE':
+            self.move_left(1)
+            self.calculate_selection()
+        elif key == 'KEY_RIGHT' or key == ' ':
+            self.move_right(1)
+            self.calculate_selection()
+        elif key == 'KEY_UP':
+            self.move_up(1)
+            self.calculate_selection()
+        elif key == 'KEY_DOWN':
+            self.move_down(1)
+            self.calculate_selection()
+        elif key == 'KEY_PPAGE':
+            # page up
+            self.caret_y = 0
+            self.caret_x = 0
+            self.selecting_direction = Constants.DIRECTION_BEFORE
+            self.calculate_selection()
+        elif key == 'KEY_NPAGE':
+            # page down
+            self.caret_y = len(self.lines) - 1
+            self.caret_x = len(self.lines[self.caret_y])
+            self.selecting_direction = Constants.DIRECTION_AFTER
+            self.calculate_selection()
+        elif key == 'KEY_HOME':
+            # go to left
+            self.caret_x = 0
+            self.selecting_direction = Constants.DIRECTION_BEFORE
+            self.calculate_selection()
+        elif key == 'KEY_END':
+            # go to right
+            self.caret_x = len(self.lines[self.caret_y])
+            self.selecting_direction = Constants.DIRECTION_AFTER
+            self.calculate_selection()
 
 def main(stdscr):
     parser = argparse.ArgumentParser()

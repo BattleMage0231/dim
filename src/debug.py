@@ -1,6 +1,13 @@
 HELLO_WORLD = (
     'Hello World',
-"""Hello, World!"""
+"""Hello, World!
+"""
+)
+
+LONG_LINE = (
+    'Long Line',
+"""Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello
+"""
 )
 
 LOREM_IPSUM = (
@@ -33,6 +40,7 @@ NONE = (
 
 TEXT_LIST = [
     HELLO_WORLD,
+    LONG_LINE,
     LOREM_IPSUM,
     NONE
 ]
