@@ -44,3 +44,12 @@ TEXT_LIST = [
     LOREM_IPSUM,
     NONE
 ]
+
+VALID_LOGGING_INDICES = []
+
+def log(text, index = VALID_LOGGING_INDICES[0] if VALID_LOGGING_INDICES else None):
+    if index in VALID_LOGGING_INDICES:
+        print(text)
+
+def end_log():
+    print('-' * 15)
