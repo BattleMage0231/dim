@@ -1,3 +1,8 @@
+NONE = (
+    'None',
+    """"""
+)
+
 HELLO_WORLD = (
     'Hello World',
 """Hello, World!
@@ -33,23 +38,25 @@ Nulla sit amet aliquam augue, euismod volutpat lacus. Maecenas faucibus congue t
 Vivamus id lectus nec purus feugiat accumsan. Maecenas sit amet placerat eros. Nam eleifend leo id risus tincidunt, vel fringilla lorem suscipit. Phasellus efficitur lobortis urna, sit amet semper purus bibendum ut. Donec porttitor lorem in ipsum sodales, id interdum turpis rhoncus. Suspendisse pharetra ex ut aliquam consectetur. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Pellentesque ligula arcu, congue viverra blandit in, consequat nec dui. Etiam feugiat posuere augue id congue."""
 )
 
-NONE = (
-    'None',
-    """"""
+VERTICAL_SCROLL = (
+    'Vertical Scroll',
+    '\n'.join([str(i) for i in range(100)] + [''])
 )
 
 TEXT_LIST = [
+    NONE,
     HELLO_WORLD,
     LONG_LINE,
     LOREM_IPSUM,
-    NONE
+    VERTICAL_SCROLL
 ]
 
-VALID_LOGGING_INDICES = []
+VALID_LOGGING_INDICES = [-1]
 
-def log(text, index = VALID_LOGGING_INDICES[0] if VALID_LOGGING_INDICES else None):
+def log(text, index = VALID_LOGGING_INDICES[0]):
     if index in VALID_LOGGING_INDICES:
         print(text)
 
-def end_log():
-    print('-' * 15)
+def end_log(index = VALID_LOGGING_INDICES[0]):
+    if index in VALID_LOGGING_INDICES:
+        print('-' * 15)

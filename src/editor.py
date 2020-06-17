@@ -81,16 +81,7 @@ class Editor:
         ]
         return header
 
-    def display_text(self):
-        self.height, self.width = self.stdscr.getmaxyx()
-        self.stdscr.erase()
-        # header
-        header = self.get_header()
-        for text, color in header:
-            self.stdscr.addstr(text, color_pair(color))
-        # default value of lines
-        if not self.lines:
-            self.stdscr.addstr('')
+    def scroll_screen(self):
         # scroll up down
         if self.scr_topleft.y > self.caret.y:
             self.scr_bottomright.y -= self.scr_topleft.y - self.caret.y
@@ -105,6 +96,19 @@ class Editor:
         elif self.caret.x >= self.scr_bottomright.x:
             self.scr_topleft.x += self.caret.x - self.scr_bottomright.x + 1
             self.scr_bottomright.x = self.caret.x + 1
+
+    def display_text(self):
+        self.height, self.width = self.stdscr.getmaxyx()
+        self.stdscr.erase()
+        # header
+        header = self.get_header()
+        for text, color in header:
+            self.stdscr.addstr(text, color_pair(color))
+        # default value of lines
+        if not self.lines:
+            self.stdscr.addstr('')
+        # scroll screen
+        self.scroll_screen()
         # display lines
         displayed_lines = self.lines[self.scr_topleft.y : min(len(self.lines), self.scr_bottomright.y)]
         for index, line in enumerate(displayed_lines):
@@ -139,12 +143,12 @@ class Editor:
                     elif select_start_between and select_end_between:
                         # selection is all on this line
                         # start and end not highlighted
-                        self.stdscr.addstr(displayed_line[ : self.select_start_pos.x])
+                        self.stdscr.addstr(displayed_line[ : self.select_start_pos.x - ln_start.x])
                         self.stdscr.addstr(
-                            displayed_line[self.select_start_pos.x : self.select_end_pos.x + 1],
+                            displayed_line[self.select_start_pos.x - ln_start.x : self.select_end_pos.x - ln_start.x + 1],
                             color_pair(7)
                         )
-                        self.stdscr.addstr(displayed_line[self.select_end_pos.x + 1 : ])
+                        self.stdscr.addstr(displayed_line[self.select_end_pos.x + 1  - ln_start.x : ])
                     else:
                         # not enclosed by selection at all
                         self.stdscr.addstr(displayed_line)
@@ -198,9 +202,10 @@ class Editor:
                 self.parse_select(key)
             self.display_text()
 
-    def delete(self, y, x):
+    def delete(self, y, x, number = 1):
+        """Deletes some number of characters on one line"""
         line = self.lines[y]
-        line = line[ : x - 1] + line[x : ]
+        line = line[ : x] + line[x + number : ]
         self.lines[y] = line
 
     def insert(self, y, x, text):
@@ -274,6 +279,8 @@ class Editor:
                     self.select_end_pos = self.caret.copy()
                     self.text_selected = True
                     self.selecting_direction = Constants.DIRECTION_BEFORE
+                elif self.cur_command == 'x':
+                    self.delete(self.caret.y, self.caret.x)
             finally:
                 self.cur_command = ''
 
@@ -284,7 +291,7 @@ class Editor:
         elif key == '\b' or key == 'KEY_BACKSPACE':
             # backspace
             if self.caret.x != 0:
-                self.delete(self.caret.y, self.caret.x)
+                self.delete(self.caret.y, self.caret.x - 1)
                 self.caret.x -= 1
             elif self.caret.y != 0:
                 # concatenate two lines
@@ -429,6 +436,28 @@ class Editor:
                     self.select_end_pos = self.caret.copy()
                     self.text_selected = True
                     self.selecting_direction = Constants.DIRECTION_BEFORE
+                elif self.cur_command == 'x':
+                    # set caret position to selection start position
+                    self.caret = self.select_start_pos.copy()
+                    if self.select_start_pos.y == self.select_end_pos.y:
+                        # delete substring
+                        dif = self.select_end_pos.x - self.select_start_pos.x + 1
+                        self.delete(self.select_start_pos.y, self.select_start_pos.x, dif)
+                    else:
+                        # delete inbetween
+                        index = self.select_start_pos.y + 1
+                        for _ in range(index, self.select_end_pos.y):
+                            self.lines.pop(index)
+                        # delete ending of start
+                        spaces = len(self.lines[self.select_start_pos.y]) - self.select_start_pos.x
+                        self.delete(self.select_start_pos.y, self.select_start_pos.x, spaces)
+                        # delete starting of end
+                        spaces = self.select_end_pos.x + 1
+                        self.delete(index, 0, spaces)
+                        if not self.lines[index]:
+                            self.lines.pop(index)
+                    self.mode = Constants.MODE_COMMAND
+                    self.text_selected = False
             finally:
                 self.cur_command = ''
 
