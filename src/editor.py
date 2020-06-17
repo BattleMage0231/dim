@@ -1,3 +1,6 @@
+# TODO move screen related stuff to a file with a class called Buffer (buffer.py)
+# TODO implement undo and redo via zlib or files
+
 import argparse
 import os
 import string
@@ -213,6 +216,52 @@ class Editor:
         line = line[ : x] + text + line[x : ]
         self.lines[y] = line 
 
+    def confirm(self, text, password):
+        self.stdscr.erase()
+        self.stdscr.addstr(' ' + text)
+        self.stdscr.refresh()
+        for desired_key in password:
+            cur_key = self.stdscr.getkey()
+            self.stdscr.addstr(cur_key)
+            self.stdscr.refresh()
+            if cur_key != desired_key:
+                return False
+        return True
+
+    def parse_general_command(self, command):
+        """Executes a general command in all command modes. Returns true if command was found."""
+        if command == 'i':
+            self.text_selected = False
+            self.mode = Constants.MODE_INSERT
+        elif command == 's':
+            if self.debug_mode:
+                res = self.confirm('Confirm that you want to save the file (type \'save\'): ', 'save')
+                if not res:
+                    # return without confirmation
+                    # True means that the command was found as a general command
+                    return True
+            try:
+                if self.args.path is not None:
+                    if not os.path.isfile(self.args.path): 
+                        raise FileNotFoundError
+                    with open(self.args.path, 'w') as edit_file:
+                        edit_file.write('\n'.join(self.lines))
+            except (FileNotFoundError, PermissionError, OSError):
+                print('The current file can no longer be found.')
+                os._exit(1)
+            except UnicodeDecodeError:
+                print('The encoding of the file is not supported.')
+                os._exit(1)
+        elif command == 'v':
+            self.mode = Constants.MODE_SELECT
+            self.select_start_pos = self.caret.copy()
+            self.select_end_pos = self.caret.copy()
+            self.text_selected = True
+            self.selecting_direction = Constants.DIRECTION_BEFORE
+        else:
+            return False
+        return True
+
     def parse_command(self, key):
         if key == chr(27):
             # escape
@@ -246,39 +295,8 @@ class Editor:
             self.caret.x = len(self.lines[self.caret.y])
         elif key == '\n' or key == chr(13):
             try:
-                if self.cur_command == 'i':
-                    if self.text_selected:
-                        self.text_selected = False
-                    self.mode = Constants.MODE_INSERT
-                elif self.cur_command == 's':
-                    if self.debug_mode:
-                        self.stdscr.erase()
-                        self.stdscr.addstr(' Confirm that you want to save the file (type \'save\'): ')
-                        self.stdscr.refresh()
-                        for desired_key in 'save':
-                            cur_key = self.stdscr.getkey()
-                            self.stdscr.addstr(cur_key)
-                            self.stdscr.refresh()
-                            if cur_key != desired_key:
-                                return
-                    try:
-                        if self.args.path is not None:
-                            if not os.path.isfile(self.args.path): 
-                                raise FileNotFoundError
-                            with open(self.args.path, 'w') as edit_file:
-                                edit_file.write('\n'.join(self.lines))
-                    except (FileNotFoundError, PermissionError, OSError):
-                        print('The current file can no longer be found.')
-                        os._exit(1)
-                    except UnicodeDecodeError:
-                        print('The encoding of the file is not supported.')
-                        os._exit(1)
-                elif self.cur_command == 'v':
-                    self.mode = Constants.MODE_SELECT
-                    self.select_start_pos = self.caret.copy()
-                    self.select_end_pos = self.caret.copy()
-                    self.text_selected = True
-                    self.selecting_direction = Constants.DIRECTION_BEFORE
+                if self.parse_general_command(self.cur_command):
+                    pass
                 elif self.cur_command == 'x':
                     self.delete(self.caret.y, self.caret.x)
             finally:
@@ -403,39 +421,8 @@ class Editor:
             self.calculate_selection()
         elif key == '\n' or key == chr(13):
             try:
-                if self.cur_command == 'i':
-                    if self.text_selected:
-                        self.text_selected = False
-                    self.mode = Constants.MODE_INSERT
-                elif self.cur_command == 's':
-                    if self.debug_mode:
-                        self.stdscr.erase()
-                        self.stdscr.addstr(' Confirm that you want to save the file (type \'save\'): ')
-                        self.stdscr.refresh()
-                        for desired_key in 'save':
-                            cur_key = self.stdscr.getkey()
-                            self.stdscr.addstr(cur_key)
-                            self.stdscr.refresh()
-                            if cur_key != desired_key:
-                                return
-                    try:
-                        if self.args.path is not None:
-                            if not os.path.isfile(self.args.path): 
-                                raise FileNotFoundError
-                            with open(self.args.path, 'w') as edit_file:
-                                edit_file.write('\n'.join(self.lines))
-                    except (FileNotFoundError, PermissionError, OSError):
-                        print('The current file can no longer be found.')
-                        os._exit(1)
-                    except UnicodeDecodeError:
-                        print('The encoding of the file is not supported.')
-                        os._exit(1)
-                elif self.cur_command == 'v':
-                    self.mode = Constants.MODE_SELECT
-                    self.select_start_pos = self.caret.copy()
-                    self.select_end_pos = self.caret.copy()
-                    self.text_selected = True
-                    self.selecting_direction = Constants.DIRECTION_BEFORE
+                if self.parse_general_command(self.cur_command):
+                    pass
                 elif self.cur_command == 'x':
                     # set caret position to selection start position
                     self.caret = self.select_start_pos.copy()
