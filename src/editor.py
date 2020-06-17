@@ -151,13 +151,13 @@ class Editor:
                 self.cur_command += key
         elif key == '\b' or key == 'KEY_BACKSPACE':
             self.cur_command = self.cur_command[ : -1]
-        elif key == 'KEY_LEFT':
+        elif key == chr(452) or key == 'KEY_LEFT':
             self.caret.move_left(1, self.lines)
-        elif key == 'KEY_RIGHT':
+        elif key == chr(454) or key == 'KEY_RIGHT':
             self.caret.move_right(1, self.lines)
-        elif key == 'KEY_UP':
+        elif key == chr(450) or key == 'KEY_UP':
             self.caret.move_up(1, self.lines)
-        elif key == 'KEY_DOWN':
+        elif key == chr(456) or key == 'KEY_DOWN':
             self.caret.move_down(1, self.lines)
         elif key == 'KEY_PPAGE':
             # page up
@@ -215,13 +215,13 @@ class Editor:
                 self.buffer.lines = self.lines
             self.caret.x = 0
             self.caret.y += 1
-        elif key == 'KEY_LEFT':
+        elif key == chr(452) or key == 'KEY_LEFT':
             self.caret.move_left(1, self.lines)
-        elif key == 'KEY_RIGHT':
+        elif key == chr(454) or key == 'KEY_RIGHT':
             self.caret.move_right(1, self.lines)
-        elif key == 'KEY_UP':
+        elif key == chr(450) or key == 'KEY_UP':
             self.caret.move_up(1, self.lines)
-        elif key == 'KEY_DOWN':
+        elif key == chr(456) or key == 'KEY_DOWN':
             self.caret.move_down(1, self.lines)
         elif key == 'KEY_PPAGE':
             # page up
@@ -273,16 +273,16 @@ class Editor:
                 self.cur_command += key
         elif key == '\b' or key == 'KEY_BACKSPACE':
             self.cur_command = self.cur_command[ : -1]
-        elif key == 'KEY_LEFT' or key == '\b' or key == 'KEY_BACKSPACE':
+        elif key == chr(452) or key == 'KEY_LEFT' or key == '\b' or key == 'KEY_BACKSPACE':
             self.caret.move_left(1, self.lines)
             self.calculate_selection()
-        elif key == 'KEY_RIGHT' or key == ' ':
+        elif key == chr(454) or key == 'KEY_RIGHT' or key == ' ':
             self.caret.move_right(1, self.lines)
             self.calculate_selection()
-        elif key == 'KEY_UP':
+        elif key == chr(450) or key == 'KEY_UP':
             self.caret.move_up(1, self.lines)
             self.calculate_selection()
-        elif key == 'KEY_DOWN':
+        elif key == chr(456) or key == 'KEY_DOWN':
             self.caret.move_down(1, self.lines)
             self.calculate_selection()
         elif key == 'KEY_PPAGE':
