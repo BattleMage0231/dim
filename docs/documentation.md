@@ -10,6 +10,10 @@ This document contains a list of commands that can be used in dim. Most of the c
 # v
 - enters select mode from the current caret position
 
+# x
+- delete the current character in command mode
+- deletes the selected block in select mode
+
 # Escape
 - changes the mode of the editor to command mode if currently in insert or select mode
 - exits the editor if currently in command mode
