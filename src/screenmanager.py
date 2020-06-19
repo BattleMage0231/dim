@@ -12,7 +12,7 @@ COLORS = [
     (7, 233, 7)
 ]
 
-class Buffer:
+class ScreenManager:
     def __init__(self, stdscr):
         # set initial values
         self.stdscr = stdscr
@@ -33,7 +33,8 @@ class Buffer:
         stdscr.bkgd(' ', color_pair(1) | A_BOLD)
 
     def load_text(self, text):
-        self.lines = text.split('\n')
+        self.lines.clear()
+        self.lines.extend(text.split('\n'))
 
     def get_size(self):
         self.height, self.width = self.stdscr.getmaxyx()
@@ -47,7 +48,25 @@ class Buffer:
     def insert(self, y, x, text):
         line = self.lines[y]
         line = line[ : x] + text + line[x : ]
-        self.lines[y] = line 
+        self.lines[y] = line
+
+    def join(self, y1, y2):
+        self.lines[y1] += self.lines[y2]
+        self.pop(y2)
+
+    def pop(self, y):
+        self.lines.pop(y) 
+
+    def insert_line(self, y, text = ''):
+        self.lines.insert(y, text)
+
+    def substr(self, y, x1, x2 = None):
+        return self.lines[y][x1 : x2]
+
+    def split(self, y, x):
+        dif = self.substr(y, x)
+        self.lines[y] = self.substr(y, 0, x)
+        self.insert_line(y + 1, dif)
 
     def scroll_screen(self):
         # scroll up down

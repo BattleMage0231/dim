@@ -9,7 +9,7 @@ import traceback
 from curses import *
 
 import debug
-from buffer import Buffer
+from screenmanager import ScreenManager
 from position import Position
 
 class Constants:
@@ -25,24 +25,23 @@ class Editor:
         self.args = args
         self.debug_mode = args.debug
         # set initial values
-        self.buffer = Buffer(stdscr)
+        self.screen_manager = ScreenManager(stdscr)
         self.selecting_direction = Constants.DIRECTION_BEFORE
         self.file_name = 'None'
         self.mode = Constants.MODE_COMMAND
         self.cur_command = ''
-        # these values are duplicates from Buffer
-        # they need to be updated each time the values in Buffer are (and vice versa)
-        self.text_selected = self.buffer.text_selected
-        self.select_start_pos = self.buffer.select_start_pos
-        self.select_end_pos = self.buffer.select_end_pos
-        self.caret = self.buffer.caret
-        self.lines = self.buffer.lines
+        # these values are duplicates from ScreenManager
+        # they need to be updated each time the values in ScreenManager are (and vice versa)
+        self.text_selected = self.screen_manager.text_selected
+        self.select_start_pos = self.screen_manager.select_start_pos
+        self.select_end_pos = self.screen_manager.select_end_pos
+        self.caret = self.screen_manager.caret
+        self.lines = self.screen_manager.lines
         # try to find a file
         try:
             if args.path is not None:
                 with open(args.path, 'r') as edit_file:
-                    self.buffer.load_text(edit_file.read())
-                    self.lines = self.buffer.lines
+                    self.screen_manager.load_text(edit_file.read())
                 self.file_name = os.path.basename(args.path)
         except (FileNotFoundError, PermissionError, OSError):
             print('The path given is invalid.')
@@ -52,25 +51,25 @@ class Editor:
             os._exit(1)
 
     def sync(self):
-        """Syncs the shared values between this object and its buffer"""
-        self.buffer.text_selected = self.text_selected
-        self.buffer.select_start_pos = self.select_start_pos
-        self.buffer.select_end_pos = self.select_end_pos
-        self.buffer.caret = self.caret
-        self.buffer.lines = self.lines
+        """Syncs the shared values between this object and its screen_manager"""
+        self.screen_manager.text_selected = self.text_selected
+        self.screen_manager.select_start_pos = self.select_start_pos
+        self.screen_manager.select_end_pos = self.select_end_pos
+        self.screen_manager.caret = self.caret
+        self.screen_manager.lines = self.lines
 
     def display(self):
-        self.buffer.display(
-            self.buffer.get_header(self.file_name, self.mode, self.cur_command)
+        self.screen_manager.display(
+            self.screen_manager.get_header(self.file_name, self.mode, self.cur_command)
         )
 
     def get_key(self):
-        return self.buffer.get_key()
+        return self.screen_manager.get_key()
 
     def launch(self):
         if self.debug_mode:
             if self.args.path is None:
-                choice = self.buffer.display_choose(
+                choice = self.screen_manager.display_choose(
                     [
                         'You have launched the editor in debug mode...',
                         '',
@@ -78,10 +77,9 @@ class Editor:
                     ],
                     [text[0] for text in debug.TEXT_LIST]
                 )
-                self.buffer.load_text(debug.TEXT_LIST[choice][1])
-                self.lines = self.buffer.lines
+                self.screen_manager.load_text(debug.TEXT_LIST[choice][1])
             else:
-                self.buffer.display_text([
+                self.screen_manager.display_text([
                     'You have launched the editor in debug mode...',
                     '',
                     'Press any key to continue.'
@@ -91,7 +89,7 @@ class Editor:
             key = self.get_key()
             if key == '`' and self.debug_mode:
                 os._exit(1)
-            self.buffer.get_size()
+            self.screen_manager.get_size()
             if self.mode == Constants.MODE_COMMAND:
                 self.parse_command(key)
             elif self.mode == Constants.MODE_INSERT:
@@ -108,7 +106,7 @@ class Editor:
             self.mode = Constants.MODE_INSERT
         elif command == 's':
             if self.debug_mode:
-                res = self.buffer.display_confirm(
+                res = self.screen_manager.display_confirm(
                     'Confirm that you want to save the file (type \'save\'): ',
                     'save'
                 )
@@ -121,7 +119,7 @@ class Editor:
                     if not os.path.isfile(self.args.path): 
                         raise FileNotFoundError
                     with open(self.args.path, 'w') as edit_file:
-                        edit_file.write('\n'.join(self.buffer.get_lines()))
+                        edit_file.write('\n'.join(self.screen_manager.get_lines()))
             except (FileNotFoundError, PermissionError, OSError):
                 print('The current file can no longer be found.')
                 os._exit(1)
@@ -147,7 +145,7 @@ class Editor:
             os._exit(1)
         elif key in Constants.ALLOWED_CHARS:
             # if command fits on screen
-            if self.buffer.width - 57 - len(self.file_name) - len(self.mode) - len(self.cur_command) > 0:
+            if self.screen_manager.width - 57 - len(self.file_name) - len(self.mode) - len(self.cur_command) > 0:
                 self.cur_command += key
         elif key == '\b' or key == 'KEY_BACKSPACE':
             self.cur_command = self.cur_command[ : -1]
@@ -179,7 +177,7 @@ class Editor:
                 if self.parse_general_command(self.cur_command):
                     pass
                 elif self.cur_command == 'x':
-                    self.buffer.delete(self.caret.y, self.caret.x)
+                    self.screen_manager.delete(self.caret.y, self.caret.x)
             finally:
                 self.cur_command = ''
 
@@ -190,29 +188,23 @@ class Editor:
         elif key == '\b' or key == 'KEY_BACKSPACE':
             # backspace
             if self.caret.x != 0:
-                self.buffer.delete(self.caret.y, self.caret.x - 1)
+                self.screen_manager.delete(self.caret.y, self.caret.x - 1)
                 self.caret.move_left(1, self.lines)
             elif self.caret.y != 0:
                 # concatenate two lines
-                line = self.lines[self.caret.y]
-                self.lines.pop(self.caret.y)
+                self.caret.x = len(self.lines[self.caret.y - 1])
+                self.screen_manager.join(self.caret.y - 1, self.caret.y)
                 self.caret.y -= 1
-                self.caret.x = len(self.lines[self.caret.y])
-                # append to end of line
-                self.buffer.insert(self.caret.y, self.caret.x, line)
         elif key == '\t':
             # tab
-            self.buffer.insert(self.caret.y, self.caret.x, ' ' * 4)
+            self.screen_manager.insert(self.caret.y, self.caret.x, ' ' * 4)
             self.caret.x += 4
         elif key == '\n' or key == chr(13):
             # newline or carriage return
             if self.caret.x == len(self.lines[self.caret.y]):
                 self.lines.insert(self.caret.y + 1, '')
             else:
-                dif = self.lines[self.caret.y][self.caret.x : ]
-                self.lines[self.caret.y] = self.lines[self.caret.y][ : self.caret.x]
-                self.lines.insert(self.caret.y + 1, dif)
-                self.buffer.lines = self.lines
+                self.screen_manager.split(self.caret.y, self.caret.x)
             self.caret.x = 0
             self.caret.y += 1
         elif key == chr(452) or key == 'KEY_LEFT':
@@ -239,7 +231,7 @@ class Editor:
             self.caret.x = len(self.lines[self.caret.y])
         elif key in Constants.ALLOWED_CHARS:
             # allowed text characters
-            self.buffer.insert(self.caret.y, self.caret.x, key)
+            self.screen_manager.insert(self.caret.y, self.caret.x, key)
             self.caret.x += 1 
 
     def calculate_selection(self):
@@ -269,7 +261,7 @@ class Editor:
             self.sync()
             self.mode = Constants.MODE_COMMAND
         elif key in Constants.ALLOWED_CHARS:
-            if self.buffer.width - 57 - len(self.file_name) - len(self.mode) - len(self.cur_command) > 0:
+            if self.screen_manager.width - 57 - len(self.file_name) - len(self.mode) - len(self.cur_command) > 0:
                 self.cur_command += key
         elif key == '\b' or key == 'KEY_BACKSPACE':
             self.cur_command = self.cur_command[ : -1]
@@ -318,7 +310,7 @@ class Editor:
                     if self.select_start_pos.y == self.select_end_pos.y:
                         # delete substring
                         dif = self.select_end_pos.x - self.select_start_pos.x + 1
-                        self.buffer.delete(self.select_start_pos.y, self.select_start_pos.x, dif)
+                        self.screen_manager.delete(self.select_start_pos.y, self.select_start_pos.x, dif)
                     else:
                         # delete inbetween
                         index = self.select_start_pos.y + 1
@@ -326,10 +318,10 @@ class Editor:
                             self.lines.pop(index)
                         # delete ending of start
                         spaces = len(self.lines[self.select_start_pos.y]) - self.select_start_pos.x
-                        self.buffer.delete(self.select_start_pos.y, self.select_start_pos.x, spaces)
+                        self.screen_manager.delete(self.select_start_pos.y, self.select_start_pos.x, spaces)
                         # delete starting of end
                         spaces = self.select_end_pos.x + 1
-                        self.buffer.delete(index, 0, spaces)
+                        self.screen_manager.delete(index, 0, spaces)
                         if not self.lines[index]:
                             self.lines.pop(index)
                     self.mode = Constants.MODE_COMMAND
