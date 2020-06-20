@@ -1,11 +1,10 @@
-# TODO implement undo and redo via zlib or files
-
 import argparse
 import os
 import string
 import sys
 import time
 import traceback
+import zlib
 from curses import *
 
 import debug
@@ -49,6 +48,9 @@ class Editor:
         except UnicodeDecodeError:
             print('The encoding of the file is not supported.')
             os._exit(1)
+        # make undo stack
+        self.undo_stack = [(self.caret.copy(), self.compress('\n'.join(self.lines)))]
+        self.undo_ptr = 0
 
     def sync(self):
         """Syncs the shared values between this object and its screen_manager"""
@@ -57,6 +59,17 @@ class Editor:
         self.screen_manager.select_end_pos = self.select_end_pos
         self.screen_manager.caret = self.caret
         self.screen_manager.lines = self.lines
+
+    def compress(self, message):
+        return zlib.compress(message.encode('utf8'))
+
+    def decompress(self, message):
+        return zlib.decompress(message).decode('utf8')
+
+    def save_state(self):
+        self.undo_stack = self.undo_stack[ : self.undo_ptr]
+        self.undo_ptr += 1
+        self.undo_stack.append((self.caret.copy(), self.compress('\n'.join(self.lines))))
 
     def display(self):
         self.screen_manager.display(
@@ -78,6 +91,7 @@ class Editor:
                     [text[0] for text in debug.TEXT_LIST]
                 )
                 self.screen_manager.load_text(debug.TEXT_LIST[choice][1])
+                self.undo_stack = [(self.caret.copy(), self.compress('\n'.join(self.lines)))]
             else:
                 self.screen_manager.display_text([
                     'You have launched the editor in debug mode...',
@@ -135,6 +149,20 @@ class Editor:
             self.text_selected = True
             self.sync()
             self.selecting_direction = Constants.DIRECTION_BEFORE
+        elif command == 'z':
+            if len(self.undo_stack) > 1:
+                self.undo_ptr = max(0, self.undo_ptr - 1)
+                caret, compressed = self.undo_stack[self.undo_ptr]
+                self.caret.x = caret.x
+                self.caret.y = caret.y
+                self.screen_manager.load_text(self.decompress(compressed))
+        elif command == 'y':
+            if self.undo_ptr + 1 < len(self.undo_stack):
+                self.undo_ptr += 1
+                caret, compressed = self.undo_stack[self.undo_ptr]
+                self.caret.x = caret.x
+                self.caret.y = caret.y
+                self.screen_manager.load_text(self.decompress(compressed))
         else:
             return False
         return True
@@ -178,6 +206,7 @@ class Editor:
                     pass
                 elif self.cur_command == 'x':
                     self.screen_manager.delete(self.caret.y, self.caret.x)
+                    self.save_state()
             finally:
                 self.cur_command = ''
 
@@ -190,15 +219,18 @@ class Editor:
             if self.caret.x != 0:
                 self.screen_manager.delete(self.caret.y, self.caret.x - 1)
                 self.caret.move_left(1, self.lines)
+                self.save_state()
             elif self.caret.y != 0:
                 # concatenate two lines
                 self.caret.x = len(self.lines[self.caret.y - 1])
                 self.screen_manager.join(self.caret.y - 1, self.caret.y)
                 self.caret.y -= 1
+                self.save_state()
         elif key == '\t':
             # tab
             self.screen_manager.insert(self.caret.y, self.caret.x, ' ' * 4)
             self.caret.x += 4
+            self.save_state()
         elif key == '\n' or key == chr(13):
             # newline or carriage return
             if self.caret.x == len(self.lines[self.caret.y]):
@@ -207,6 +239,7 @@ class Editor:
                 self.screen_manager.split(self.caret.y, self.caret.x)
             self.caret.x = 0
             self.caret.y += 1
+            self.save_state()
         elif key == chr(452) or key == 'KEY_LEFT':
             self.caret.move_left(1, self.lines)
         elif key == chr(454) or key == 'KEY_RIGHT':
@@ -233,6 +266,7 @@ class Editor:
             # allowed text characters
             self.screen_manager.insert(self.caret.y, self.caret.x, key)
             self.caret.x += 1 
+            self.save_state()
 
     def calculate_selection(self):
         if self.caret.is_before(self.select_start_pos):
@@ -327,6 +361,7 @@ class Editor:
                     self.mode = Constants.MODE_COMMAND
                     self.text_selected = False
                     self.sync()
+                    self.save_state()
             finally:
                 self.cur_command = ''
 
