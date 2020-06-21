@@ -10,6 +10,8 @@ import debug
 from matrix import Matrix
 from position import Position
 
+### TODO add syntax highlighting (highlighting override syntax highlighting) ###
+
 class Constants:
     ALLOWED_CHARS = string.ascii_letters + string.digits + string.punctuation + ' '
     MODE_INSERT = 'INSERT'
@@ -256,7 +258,7 @@ class Editor:
             self.save_state()
         elif key == '\n' or key == chr(13):
             # newline or carriage return
-            if self.caret.x == self.matrix.get_line_length(self.caret.y):
+            if self.caret.x > self.matrix.get_line_length(self.caret.y):
                 self.matrix.lines.insert(self.caret.y + 1, '')
             else:
                 self.matrix.split_line(self.caret.y, self.caret.x)

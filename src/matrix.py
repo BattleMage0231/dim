@@ -78,7 +78,7 @@ class Matrix:
         self.lines.insert(y, text)
 
     def split_line(self, y, x):
-        dif = self.get_substr(y, x, -1)
+        dif = self.get_substr(y, x, None)
         self.lines[y] = self.get_substr(y, 0, x)
         self.insert_line(y + 1, dif)
 
