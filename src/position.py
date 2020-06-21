@@ -3,7 +3,7 @@ class Position:
         self.y = y
         self.x = x
 
-    def move_left(self, spaces, grid):
+    def move_left(self, grid, spaces = 1):
         if not grid:
             return
         self.x -= spaces
@@ -20,7 +20,7 @@ class Position:
         else:
             self.x += min(1, len(grid[self.y]))
 
-    def move_right(self, spaces, grid):
+    def move_right(self, grid, spaces = 1):
         if not grid:
             return
         self.x += spaces
@@ -38,7 +38,7 @@ class Position:
         else:
             self.x = max(0, spaces + len(grid[self.y]) - 1)
 
-    def move_up(self, spaces, grid):
+    def move_up(self, grid, spaces = 1):
         if not grid:
             return
         self.y -= spaces
@@ -46,7 +46,7 @@ class Position:
             self.y = 0
         self.x = min(len(grid[self.y]), self.x)
 
-    def move_down(self, spaces, grid):
+    def move_down(self, grid, spaces = 1):
         if not grid:
             return
         self.y += spaces

@@ -12,18 +12,13 @@ COLORS = [
     (7, 233, 7)
 ]
 
-class ScreenManager:
+class Matrix:
     def __init__(self, stdscr):
         # set initial values
         self.stdscr = stdscr
         self.lines = ['']
         self.height, self.width = stdscr.getmaxyx()
-        self.scr_topleft = Position(0, 0)
-        self.scr_bottomright = Position(self.height - 2, self.width - 1)
-        self.caret = Position(0, 0)
-        self.select_start_pos = Position()
-        self.select_end_pos = Position()
-        self.text_selected = False
+        
         # load colors
         start_color()
         use_default_colors()
@@ -33,59 +28,62 @@ class ScreenManager:
         stdscr.bkgd(' ', color_pair(1) | A_BOLD)
 
     def load_text(self, text):
-        self.lines.clear()
-        self.lines.extend(text.split('\n'))
+        self.lines = text.split('\n')
 
-    def get_size(self):
+    def get_content(self):
+        return '\n'.join(self.lines)
+
+    def get_height(self):
+        return self.height
+
+    def get_width(self):
+        return self.width
+
+    def get_text_height(self):
+        return len(self.lines)
+    
+    def get_line_length(self, y):
+        return len(self.lines[y])
+
+    def update_screen_size(self):
         self.height, self.width = self.stdscr.getmaxyx()
 
-    def delete(self, y, x, num = 1):
-        """Deletes some number of characters on one line"""
+    def delete_substr(self, y, x1, x2):
+        """Deletes some number of characters on one line, from x1 to x2 (inclusive, exclusive)"""
         line = self.lines[y]
-        line = line[ : x] + line[x + num : ]
+        line = line[ : x1] + line[x2 : ]
         self.lines[y] = line
 
+    def get_substr(self, y, x1, x2):
+        """Gets a substring of a line, from x1 to x2 (inclusive, exclusive)"""
+        return self.lines[y][x1 : x2]
+
     def insert(self, y, x, text):
+        """Inserts some text at lines[y][x]"""
         line = self.lines[y]
         line = line[ : x] + text + line[x : ]
         self.lines[y] = line
 
     def join(self, y1, y2):
         self.lines[y1] += self.lines[y2]
-        self.pop(y2)
+        self.pop_line(y2)
 
-    def pop(self, y):
+    def get_line(self, y):
+        return self.lines[y][ : ]
+
+    def pop_line(self, y):
         self.lines.pop(y) 
 
     def insert_line(self, y, text = ''):
         self.lines.insert(y, text)
 
-    def substr(self, y, x1, x2 = None):
-        return self.lines[y][x1 : x2]
-
-    def split(self, y, x):
-        dif = self.substr(y, x)
-        self.lines[y] = self.substr(y, 0, x)
+    def split_line(self, y, x):
+        dif = self.get_substr(y, x, -1)
+        self.lines[y] = self.get_substr(y, 0, x)
         self.insert_line(y + 1, dif)
 
-    def scroll_screen(self):
-        # scroll up down
-        if self.scr_topleft.y > self.caret.y:
-            self.scr_bottomright.y -= self.scr_topleft.y - self.caret.y
-            self.scr_topleft.y = self.caret.y
-        elif self.scr_bottomright.y <= self.caret.y:
-            self.scr_topleft.y += self.caret.y - self.scr_bottomright.y + 1
-            self.scr_bottomright.y = self.caret.y + 1
-        # scroll left right
-        if self.caret.x < self.scr_topleft.x:
-            self.scr_bottomright.x -= self.scr_topleft.x - self.caret.x
-            self.scr_topleft.x = self.caret.x
-        elif self.caret.x >= self.scr_bottomright.x:
-            self.scr_topleft.x += self.caret.x - self.scr_bottomright.x + 1
-            self.scr_bottomright.x = self.caret.x + 1
-
     def get_header(self, file_name, mode, cur_command):
-        self.get_size()
+        self.update_screen_size()
         padding = (self.width - 56 - len(file_name) - len(mode) - len(cur_command))
         header = [
             (' Dim v1',                     3), 
@@ -104,7 +102,7 @@ class ScreenManager:
         return self.stdscr.getkey()
 
     def get_lines(self):
-        return self.lines
+        return self.lines[:]
 
     def move_left(self, position, spaces = 1):
         position.move_left(spaces, self.lines)
@@ -120,7 +118,7 @@ class ScreenManager:
 
     def display_text(self, text):
         """Displays an array of strings to the screen. Waits for user input before continuing"""
-        self.get_size()
+        self.update_screen_size()
         self.stdscr.erase()
         for line in text:
             self.stdscr.addstr(' ')
@@ -169,34 +167,30 @@ class ScreenManager:
             key = self.stdscr.getkey()  
         return cur_index    
 
-    def display(self, header):
+    def display(self, header, caret, select_start_pos, select_end_pos, scr_topleft, scr_bottomright):
         """Displays to the given screen"""
-        self.get_size()
+        self.update_screen_size()
         self.stdscr.erase()
         # header
         for text, color in header:
             self.stdscr.addstr(text, color_pair(color))
-        # default value of lines
-        if not self.lines:
-            self.stdscr.addstr('')
-        # scroll screen
-        self.scroll_screen()
+        text_selected = select_start_pos is not None
         # display lines
-        displayed_lines = self.lines[self.scr_topleft.y : min(len(self.lines), self.scr_bottomright.y)]
+        displayed_lines = self.lines[scr_topleft.y : min(len(self.lines), scr_bottomright.y)]
         for index, line in enumerate(displayed_lines):
             self.stdscr.addstr(' ')
-            if len(line) >= self.scr_topleft.x:
+            if len(line) >= scr_topleft.x:
                 # inclusive, position of line start and line end of displayed line
-                ln_start = Position(self.scr_topleft.y + index, self.scr_topleft.x)
-                ln_end = Position(self.scr_topleft.y + index, self.scr_topleft.x + self.width - 1)
-                displayed_line = line[ln_start.x : min(len(line), self.scr_bottomright.x - 1)]
-                if self.text_selected:
+                ln_start = Position(scr_topleft.y + index, scr_topleft.x)
+                ln_end = Position(scr_topleft.y + index, scr_topleft.x + self.width - 1)
+                displayed_line = line[ln_start.x : min(len(line), scr_bottomright.x - 1)]
+                if text_selected:
                     # whether start position and end position of line are between selection
-                    start_between = ln_start.is_between(self.select_start_pos, self.select_end_pos)
-                    end_between = ln_end.is_between(self.select_start_pos, self.select_end_pos)
+                    start_between = ln_start.is_between(select_start_pos, select_end_pos)
+                    end_between = ln_end.is_between(select_start_pos, select_end_pos)
                     # whether selection is between start and end position
-                    select_start_between = self.select_start_pos.is_between(ln_start, ln_end)
-                    select_end_between = self.select_end_pos.is_between(ln_start, ln_end)
+                    select_start_between = select_start_pos.is_between(ln_start, ln_end)
+                    select_end_between = select_end_pos.is_between(ln_start, ln_end)
                     if start_between and end_between:
                         # completely enclosed
                         self.stdscr.addstr(displayed_line, color_pair(7))
@@ -204,23 +198,23 @@ class ScreenManager:
                         # only start between selection
                         # end is on same line
                         # only starting portion is highlighted
-                        self.stdscr.addstr(displayed_line[ : self.select_end_pos.x - ln_start.x + 1], color_pair(7))
-                        self.stdscr.addstr(displayed_line[self.select_end_pos.x - ln_start.x + 1 : ])
+                        self.stdscr.addstr(displayed_line[ : select_end_pos.x - ln_start.x + 1], color_pair(7))
+                        self.stdscr.addstr(displayed_line[select_end_pos.x - ln_start.x + 1 : ])
                     elif end_between:
                         # only end between selection
                         # start is on same line
                         # only ending portion is highlighted
-                        self.stdscr.addstr(displayed_line[ : self.select_start_pos.x - ln_start.x])
-                        self.stdscr.addstr(displayed_line[self.select_start_pos.x - ln_start.x : ], color_pair(7))
+                        self.stdscr.addstr(displayed_line[ : select_start_pos.x - ln_start.x])
+                        self.stdscr.addstr(displayed_line[select_start_pos.x - ln_start.x : ], color_pair(7))
                     elif select_start_between and select_end_between:
                         # selection is all on this line
                         # start and end not highlighted
-                        self.stdscr.addstr(displayed_line[ : self.select_start_pos.x - ln_start.x])
+                        self.stdscr.addstr(displayed_line[ : select_start_pos.x - ln_start.x])
                         self.stdscr.addstr(
-                            displayed_line[self.select_start_pos.x - ln_start.x : self.select_end_pos.x - ln_start.x + 1],
+                            displayed_line[select_start_pos.x - ln_start.x : select_end_pos.x - ln_start.x + 1],
                             color_pair(7)
                         )
-                        self.stdscr.addstr(displayed_line[self.select_end_pos.x + 1  - ln_start.x : ])
+                        self.stdscr.addstr(displayed_line[select_end_pos.x + 1  - ln_start.x : ])
                     else:
                         # not enclosed by selection at all
                         self.stdscr.addstr(displayed_line)
@@ -228,4 +222,4 @@ class ScreenManager:
                     self.stdscr.addstr(displayed_line)
             if index != len(displayed_lines) - 1:
                 self.stdscr.addstr('\n')
-        self.stdscr.move(self.caret.y - self.scr_topleft.y + 2, self.caret.x - self.scr_topleft.x + 1)
+        self.stdscr.move(caret.y - scr_topleft.y + 2, caret.x - scr_topleft.x + 1)
