@@ -1,3 +1,5 @@
+import string
+
 from curses import *
 
 from position import Position
@@ -11,6 +13,12 @@ COLORS = [
     (6, 150, 237),
     (7, 233, 7)
 ]
+
+class Constants:
+    ALLOWED_CHARS = string.ascii_letters + string.digits + string.punctuation + ' '
+    MODE_INSERT = 'INSERT'
+    MODE_COMMAND = 'COMMAND'
+    MODE_SELECT = 'SELECT'
 
 class Matrix:
     def __init__(self, stdscr):
@@ -125,21 +133,33 @@ class Matrix:
             self.stdscr.addstr('\n')
         self.stdscr.getkey()
 
+    def display_prompt(self, text):
+        """
+        Displays a line of text to the screen and awaits a line of input, which is returned.
+        """
+        self.stdscr.erase()
+        self.stdscr.addstr(' ' + text + '\n ')
+        self.stdscr.refresh()
+        key = self.get_key()
+        res = ''
+        while key != '\n' and key != chr(13):
+            self.stdscr.erase()
+            self.stdscr.addstr(' ' + text)
+            if key == '\b' or key == 'KEY_BACKSPACE':
+                res = res[ : -1]
+            elif key in Constants.ALLOWED_CHARS:
+                res += key
+            self.stdscr.addstr('\n ' + res)
+            key = self.get_key()
+        return res
+
+
     def display_confirm(self, text, password):
         """
         Displays a line of text to the screen and awaits a password.
         Returns true if the password is equal to the given password.
         """
-        self.stdscr.erase()
-        self.stdscr.addstr(' ' + text)
-        self.stdscr.refresh()
-        for desired_key in password:
-            cur_key = self.stdscr.getkey()
-            self.stdscr.addstr(cur_key)
-            self.stdscr.refresh()
-            if cur_key != desired_key:
-                return False
-        return True
+        return self.display_prompt(text) == password
 
     def display_choose(self, text, choices):
         """

@@ -7,16 +7,10 @@ import zlib
 from curses import *
 
 import debug
-from matrix import Matrix
+from matrix import Matrix, Constants
 from position import Position
 
 ### TODO add syntax highlighting (highlighting override syntax highlighting) ###
-
-class Constants:
-    ALLOWED_CHARS = string.ascii_letters + string.digits + string.punctuation + ' '
-    MODE_INSERT = 'INSERT'
-    MODE_COMMAND = 'COMMAND'
-    MODE_SELECT = 'SELECT'
 
 class Editor:
     def __init__(self, stdscr, args):
@@ -151,12 +145,21 @@ class Editor:
                     # return without confirmation
                     # True means that the command was found as a general command
                     return True
+            if self.args.path is None:
+                self.args.path = self.matrix.display_prompt('Enter the name of the file: ')
+                self.file_name = os.path.basename(self.args.path)
+                try:
+                    if not os.path.isfile(self.args.path):
+                        open(self.args.path, 'a').close()
+                except:
+                    print('An error occured when creating the file')
+                    os._exit(1)
             try:
                 if self.args.path is not None:
                     if not os.path.isfile(self.args.path): 
                         raise FileNotFoundError
                     with open(self.args.path, 'w') as edit_file:
-                        edit_file.write(self.matrix.get_lines())
+                        edit_file.write(self.matrix.get_content())
             except (FileNotFoundError, PermissionError, OSError):
                 print('The current file can no longer be found.')
                 os._exit(1)
