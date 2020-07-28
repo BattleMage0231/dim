@@ -6,8 +6,8 @@ from editor import Editor
 
 def main(stdscr):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-path', '-p', help='path to file being edited')
-    parser.add_argument('-debug', help='launch the editor in debug mode', action='store_true')
+    parser.add_argument('file', nargs='?', default=None, help='path to the file being edited')
+    parser.add_argument('-g', '--debug', help='launch the editor in debug mode', action='store_true')
     args = parser.parse_args()
     try:
         editor = Editor(stdscr, args)

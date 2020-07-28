@@ -7,10 +7,15 @@ import zlib
 from curses import *
 
 import debug
-from matrix import Matrix, Constants
+from matrix import Matrix, ALLOWED_CHARS
 from position import Position
 
-### TODO add syntax highlighting (highlighting override syntax highlighting) ###
+# editor mode constants
+MODE_INSERT = 'INSERT'
+MODE_COMMAND = 'COMMAND'
+MODE_SELECT = 'SELECT'
+
+### TODO add syntax highlighting (highlighting overrides syntax highlighting) ###
 
 class Editor:
     def __init__(self, stdscr, args):
@@ -26,15 +31,15 @@ class Editor:
         self.text_selected = False
         self.last_selection_before = True
         self.file_name = 'None'
-        self.mode = Constants.MODE_COMMAND
+        self.mode = MODE_COMMAND
         self.cur_command = ''
         self.saved = True
         # try to find a file
         try:
-            if args.path is not None:
-                with open(args.path, 'r') as edit_file:
+            if args.file is not None:
+                with open(args.file, 'r') as edit_file:
                     self.matrix.load_text(edit_file.read())
-                self.file_name = os.path.basename(args.path)
+                self.file_name = os.path.basename(args.file)
         except (FileNotFoundError, PermissionError, OSError):
             print('The path given is invalid.')
             os._exit(1)
@@ -100,7 +105,7 @@ class Editor:
 
     def launch(self):
         if self.debug_mode:
-            if self.args.path is None:
+            if self.args.file is None:
                 choice = self.matrix.display_choose(
                     [
                         'You have launched the editor in debug mode...',
@@ -122,11 +127,11 @@ class Editor:
             key = self.get_key()
             if key == '`' and self.debug_mode:
                 os._exit(1)
-            if self.mode == Constants.MODE_COMMAND:
+            if self.mode == MODE_COMMAND:
                 self.parse_command(key)
-            elif self.mode == Constants.MODE_INSERT:
+            elif self.mode == MODE_INSERT:
                 self.parse_insert(key)
-            elif self.mode == Constants.MODE_SELECT:
+            elif self.mode == MODE_SELECT:
                 self.parse_select(key)
             self.display()
 
@@ -134,7 +139,7 @@ class Editor:
         """Executes a general command in all command modes. Returns true if command was found."""
         if command == 'i':
             self.text_selected = False
-            self.mode = Constants.MODE_INSERT
+            self.mode = MODE_INSERT
         elif command == 's':
             if self.debug_mode:
                 res = self.matrix.display_confirm(
@@ -145,20 +150,20 @@ class Editor:
                     # return without confirmation
                     # True means that the command was found as a general command
                     return True
-            if self.args.path is None:
-                self.args.path = self.matrix.display_prompt('Enter the name of the file: ')
-                self.file_name = os.path.basename(self.args.path)
+            if self.args.file is None:
+                self.args.file = self.matrix.display_prompt('Enter the name of the file: ')
+                self.file_name = os.path.basename(self.args.file)
                 try:
-                    if not os.path.isfile(self.args.path):
-                        open(self.args.path, 'a').close()
+                    if not os.path.isfile(self.args.file):
+                        open(self.args.file, 'a').close()
                 except:
                     print('An error occured when creating the file')
                     os._exit(1)
             try:
-                if self.args.path is not None:
-                    if not os.path.isfile(self.args.path): 
+                if self.args.file is not None:
+                    if not os.path.isfile(self.args.file): 
                         raise FileNotFoundError
-                    with open(self.args.path, 'w') as edit_file:
+                    with open(self.args.file, 'w') as edit_file:
                         edit_file.write(self.matrix.get_content())
             except (FileNotFoundError, PermissionError, OSError):
                 print('The current file can no longer be found.')
@@ -168,7 +173,7 @@ class Editor:
                 os._exit(1)
             self.saved = True
         elif command == 'v':
-            self.mode = Constants.MODE_SELECT
+            self.mode = MODE_SELECT
             self.select_start_pos = self.caret.copy()
             self.select_end_pos = self.caret.copy()
             self.text_selected = True
@@ -201,7 +206,7 @@ class Editor:
                 if not res:
                     return
             os._exit(1)
-        elif key in Constants.ALLOWED_CHARS:
+        elif key in ALLOWED_CHARS:
             # if command fits on screen
             padding = 57 + sum(list(map(len, [self.file_name, self.mode, self.cur_command])))
             self.matrix.update_screen_size()
@@ -246,7 +251,7 @@ class Editor:
     def parse_insert(self, key):
         if key == chr(27):
             # escape
-            self.mode = Constants.MODE_COMMAND
+            self.mode = MODE_COMMAND
         elif key == '\b' or key == 'KEY_BACKSPACE':
             # backspace
             if self.caret.x != 0:
@@ -299,7 +304,7 @@ class Editor:
         elif key == 'KEY_END' or key == chr(455) or key == 'KEY_C1':
             # go to right
             self.caret.x = self.matrix.get_line_length(self.caret.y)
-        elif key in Constants.ALLOWED_CHARS:
+        elif key in ALLOWED_CHARS:
             # allowed text characters
             self.matrix.insert(self.caret.y, self.caret.x, key)
             self.caret.x += 1 
@@ -326,8 +331,8 @@ class Editor:
         if key == chr(27):
             # escape
             self.text_selected = False
-            self.mode = Constants.MODE_COMMAND
-        elif key in Constants.ALLOWED_CHARS:
+            self.mode = MODE_COMMAND
+        elif key in ALLOWED_CHARS:
             # if command fits on screen
             padding = 57 + sum(list(map(len, [self.file_name, self.mode, self.cur_command])))
             self.matrix.update_screen_size()
@@ -398,7 +403,7 @@ class Editor:
                         )
                         if self.matrix.get_line(index) == '':
                             self.matrix.pop_line(index)
-                    self.mode = Constants.MODE_COMMAND
+                    self.mode = MODE_COMMAND
                     self.text_selected = False
                     self.save_state()
                     self.saved = False

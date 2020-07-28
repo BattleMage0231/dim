@@ -1,5 +1,3 @@
-import string
-
 from curses import *
 
 from position import Position
@@ -14,11 +12,7 @@ COLORS = [
     (7, 233, 7)
 ]
 
-class Constants:
-    ALLOWED_CHARS = string.ascii_letters + string.digits + string.punctuation + ' '
-    MODE_INSERT = 'INSERT'
-    MODE_COMMAND = 'COMMAND'
-    MODE_SELECT = 'SELECT'
+ALLOWED_CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ '
 
 class Matrix:
     def __init__(self, stdscr):
@@ -56,20 +50,16 @@ class Matrix:
         self.height, self.width = self.stdscr.getmaxyx()
 
     def delete_substr(self, y, x1, x2):
-        """Deletes some number of characters on one line, from x1 to x2 (inclusive, exclusive)"""
-        line = self.lines[y]
-        line = line[ : x1] + line[x2 : ]
-        self.lines[y] = line
+        """Deletes some number of characters on one line, from x1 to x2 [inclusive, exclusive)"""
+        self.lines[y] = self.lines[y][ : x1] + self.lines[y][x2 : ]
 
     def get_substr(self, y, x1, x2):
-        """Gets a substring of a line, from x1 to x2 (inclusive, exclusive)"""
+        """Gets a substring of a line, from x1 to x2 [inclusive, exclusive)"""
         return self.lines[y][x1 : x2]
 
     def insert(self, y, x, text):
         """Inserts some text at lines[y][x]"""
-        line = self.lines[y]
-        line = line[ : x] + text + line[x : ]
-        self.lines[y] = line
+        self.lines[y] = self.lines[y][ : x] + text + self.lines[y][x : ]
 
     def join(self, y1, y2):
         self.lines[y1] += self.lines[y2]
@@ -78,6 +68,9 @@ class Matrix:
     def get_line(self, y):
         return self.lines[y][ : ]
 
+    def get_lines(self):
+        return self.lines[:]
+
     def pop_line(self, y):
         self.lines.pop(y) 
 
@@ -85,7 +78,7 @@ class Matrix:
         self.lines.insert(y, text)
 
     def split_line(self, y, x):
-        dif = self.get_substr(y, x, None)
+        dif = self.get_substr(y, x, None) # None = to end of line
         self.lines[y] = self.get_substr(y, 0, x)
         self.insert_line(y + 1, dif)
 
@@ -93,8 +86,8 @@ class Matrix:
         self.update_screen_size()
         padding = (self.width - 56 - len(file_name) - len(mode) - len(cur_command))
         header = [
-            (' Dim v1',                     3), 
-            (' ' * 5,                       2),
+            (' Dim',                        3), 
+            (' ' * 8,                       2),
             ('Editing ' + file_name,        4),
             (' ' * 20,                      2),
             (cur_command,                   6),
@@ -107,21 +100,6 @@ class Matrix:
 
     def get_key(self):
         return self.stdscr.getkey()
-
-    def get_lines(self):
-        return self.lines[:]
-
-    def move_left(self, position, spaces = 1):
-        position.move_left(spaces, self.lines)
-
-    def move_right(self, position, spaces = 1):
-        position.move_right(spaces, self.lines)
-
-    def move_up(self, position, spaces = 1):
-        position.move_up(spaces, self.lines)
-
-    def move_down(self, position, spaces = 1):
-        position.move_down(spaces, self.lines)
 
     def display_text(self, text):
         """Displays an array of strings to the screen. Waits for user input before continuing"""
@@ -147,7 +125,7 @@ class Matrix:
             self.stdscr.addstr(' ' + text)
             if key == '\b' or key == 'KEY_BACKSPACE':
                 res = res[ : -1]
-            elif key in Constants.ALLOWED_CHARS:
+            elif key in ALLOWED_CHARS:
                 res += key
             self.stdscr.addstr('\n ' + res)
             key = self.get_key()
@@ -156,7 +134,7 @@ class Matrix:
 
     def display_confirm(self, text, password):
         """
-        Displays a line of text to the screen and awaits a password.
+        Displays a line of text to the screen and awaits a case-sensitive password.
         Returns true if the password is equal to the given password.
         """
         return self.display_prompt(text) == password
