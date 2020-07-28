@@ -18,7 +18,6 @@ class Matrix:
         self.stdscr = stdscr
         self.lines = ['']
         self.height, self.width = stdscr.getmaxyx()
-        
         # load colors
         start_color()
         use_default_colors()
@@ -150,10 +149,10 @@ class Matrix:
         cur_index = 0
         key = None
         while key != '\n' and key != chr(13):
-            if key == 'KEY_UP':
+            if key == chr(450) or key == 'KEY_UP' or key == 'KEY_A2':
                 cur_index -= 1
                 cur_index = max(cur_index, 0)
-            elif key == 'KEY_DOWN':
+            elif key == chr(456) or key == 'KEY_DOWN' or key == 'KEY_C2':
                 cur_index += 1
                 cur_index = min(cur_index, len(choices) - 1)
             self.stdscr.erase()

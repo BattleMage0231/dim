@@ -17,8 +17,6 @@ class Constants:
     MODE_INSERT = 'INSERT'
     MODE_COMMAND = 'COMMAND'
     MODE_SELECT = 'SELECT'
-    DIRECTION_BEFORE = 0
-    DIRECTION_AFTER = 1
 
 class Editor:
     def __init__(self, stdscr, args):
@@ -36,6 +34,7 @@ class Editor:
         self.file_name = 'None'
         self.mode = Constants.MODE_COMMAND
         self.cur_command = ''
+        self.saved = True
         # try to find a file
         try:
             if args.path is not None:
@@ -164,6 +163,7 @@ class Editor:
             except UnicodeDecodeError:
                 print('The encoding of the file is not supported.')
                 os._exit(1)
+            self.saved = True
         elif command == 'v':
             self.mode = Constants.MODE_SELECT
             self.select_start_pos = self.caret.copy()
@@ -173,16 +173,16 @@ class Editor:
         elif command == 'z':
             self.undo_ptr = max(0, self.undo_ptr - 1)
             caret, compressed = self.undo_stack[self.undo_ptr]
-            self.caret.x = caret.x
-            self.caret.y = caret.y
+            self.caret = caret.copy()
             self.matrix.load_text(self.decompress(compressed))
+            self.saved = False
         elif command == 'y':
             if self.undo_ptr + 1 < len(self.undo_stack):
                 self.undo_ptr += 1
                 caret, compressed = self.undo_stack[self.undo_ptr]
-                self.caret.x = caret.x
-                self.caret.y = caret.y
+                self.caret = caret.copy()
                 self.matrix.load_text(self.decompress(compressed))
+                self.saved = False
         else:
             return False
         return True
@@ -190,6 +190,13 @@ class Editor:
     def parse_command(self, key):
         if key == chr(27):
             # escape
+            if not self.saved:
+                res = self.matrix.display_confirm(
+                    'Do you want to quit without saving? (y/n): ',
+                    'y'
+                )
+                if not res:
+                    return
             os._exit(1)
         elif key in Constants.ALLOWED_CHARS:
             # if command fits on screen
@@ -199,26 +206,27 @@ class Editor:
                 self.cur_command += key
         elif key == '\b' or key == 'KEY_BACKSPACE':
             self.cur_command = self.cur_command[ : -1]
-        elif key == chr(452) or key == 'KEY_LEFT':
+        elif key == chr(452) or key == 'KEY_LEFT' or key == 'KEY_B1':
             self.move_left(self.caret)
-        elif key == chr(454) or key == 'KEY_RIGHT':
+        elif key == chr(454) or key == 'KEY_RIGHT' or key == 'KEY_B3':
             self.move_right(self.caret)
-        elif key == chr(450) or key == 'KEY_UP':
+        elif key == chr(450) or key == 'KEY_UP' or key == 'KEY_A2':
             self.move_up(self.caret)
-        elif key == chr(456) or key == 'KEY_DOWN':
+        elif key == chr(456) or key == 'KEY_DOWN' or key == 'KEY_C2':
             self.move_down(self.caret)
-        elif key == 'KEY_PPAGE':
+        elif key == 'KEY_PPAGE' or key == chr(451) or key == 'KEY_A3':
             # page up
-            self.caret.y = 0
-            self.caret.x = 0
-        elif key == 'KEY_NPAGE':
+            self.caret = Position(0, 0)
+        elif key == 'KEY_NPAGE' or key == chr(457) or key == 'KEY_C3':
             # page down
-            self.caret.y = self.matrix.get_text_height() - 1
-            self.caret.x = self.matrix.get_line_length(self.caret.y)
-        elif key == 'KEY_HOME':
+            self.caret = Position(
+                self.matrix.get_text_height() - 1,
+                self.matrix.get_line_length(self.caret.y)
+            )
+        elif key == 'KEY_HOME' or key == chr(449) or key == 'KEY_A1':
             # go to left
             self.caret.x = 0
-        elif key == 'KEY_END':
+        elif key == 'KEY_END' or key == chr(455) or key == 'KEY_C1':
             # go to right
             self.caret.x = self.matrix.get_line_length(self.caret.y)
         elif key == '\n' or key == chr(13):
@@ -230,6 +238,7 @@ class Editor:
                         self.caret.y, self.caret.x, self.caret.x + 1
                     )
                     self.save_state()
+                    self.saved = False
             finally:
                 self.cur_command = ''
 
@@ -245,46 +254,50 @@ class Editor:
                 )
                 self.move_left(self.caret)
                 self.save_state()
+                self.saved = False
             elif self.caret.y != 0:
                 # concatenate two lines
                 self.caret.x = self.matrix.get_line_length(self.caret.y - 1)
                 self.matrix.join(self.caret.y - 1, self.caret.y)
                 self.caret.y -= 1
                 self.save_state()
+                self.saved = False
         elif key == '\t':
             # tab
             self.matrix.insert(self.caret.y, self.caret.x, ' ' * 4)
             self.caret.x += 4
             self.save_state()
+            self.saved = False
         elif key == '\n' or key == chr(13):
             # newline or carriage return
             if self.caret.x > self.matrix.get_line_length(self.caret.y):
                 self.matrix.lines.insert(self.caret.y + 1, '')
             else:
                 self.matrix.split_line(self.caret.y, self.caret.x)
-            self.caret.x = 0
-            self.caret.y += 1
+            self.caret = Position(self.caret.y + 1, 0)
             self.save_state()
-        elif key == chr(452) or key == 'KEY_LEFT':
+            self.saved = False
+        elif key == chr(452) or key == 'KEY_LEFT' or key == 'KEY_B1':
             self.move_left(self.caret)
-        elif key == chr(454) or key == 'KEY_RIGHT':
+        elif key == chr(454) or key == 'KEY_RIGHT' or key == 'KEY_B3':
             self.move_right(self.caret)
-        elif key == chr(450) or key == 'KEY_UP':
+        elif key == chr(450) or key == 'KEY_UP' or key == 'KEY_A2':
             self.move_up(self.caret)
-        elif key == chr(456) or key == 'KEY_DOWN':
+        elif key == chr(456) or key == 'KEY_DOWN' or key == 'KEY_C2':
             self.move_down(self.caret)
-        elif key == 'KEY_PPAGE':
+        elif key == 'KEY_PPAGE' or key == chr(451) or key == 'KEY_A3':
             # page up
-            self.caret.y = 0
-            self.caret.x = 0
-        elif key == 'KEY_NPAGE':
+            self.caret = Position(0, 0)
+        elif key == 'KEY_NPAGE' or key == chr(457) or key == 'KEY_C3':
             # page down
-            self.caret.y = self.matrix.get_text_height() - 1
-            self.caret.x = self.matrix.get_line_length(self.caret.y)
-        elif key == 'KEY_HOME':
+            self.caret = Position(
+                self.matrix.get_text_height() - 1,
+                self.matrix.get_line_length(self.caret.y)
+            )
+        elif key == 'KEY_HOME' or key == chr(449) or key == 'KEY_A1':
             # go to left
             self.caret.x = 0
-        elif key == 'KEY_END':
+        elif key == 'KEY_END' or key == chr(455) or key == 'KEY_C1':
             # go to right
             self.caret.x = self.matrix.get_line_length(self.caret.y)
         elif key in Constants.ALLOWED_CHARS:
@@ -292,6 +305,7 @@ class Editor:
             self.matrix.insert(self.caret.y, self.caret.x, key)
             self.caret.x += 1 
             self.save_state()
+            self.saved = False
 
     def calculate_selection(self):
         if self.caret.is_before(self.select_start_pos):
@@ -322,33 +336,34 @@ class Editor:
                 self.cur_command += key
         elif key == '\b' or key == 'KEY_BACKSPACE':
             self.cur_command = self.cur_command[ : -1]
-        elif key == chr(452) or key == 'KEY_LEFT' or key == '\b' or key == 'KEY_BACKSPACE':
+        elif key == chr(452) or key == 'KEY_LEFT' or key == 'KEY_B1' or key == '\b' or key == 'KEY_BACKSPACE':
             self.move_left(self.caret)
             self.calculate_selection()
-        elif key == chr(454) or key == 'KEY_RIGHT' or key == ' ':
+        elif key == chr(454) or key == 'KEY_RIGHT' or key == 'KEY_B3' or key == ' ':
             self.move_right(self.caret)
             self.calculate_selection()
-        elif key == chr(450) or key == 'KEY_UP':
+        elif key == chr(450) or key == 'KEY_UP' or key == 'KEY_A2':
             self.move_up(self.caret)
             self.calculate_selection()
-        elif key == chr(456) or key == 'KEY_DOWN':
+        elif key == chr(456) or key == 'KEY_DOWN' or key == 'KEY_C2':
             self.move_down(self.caret)
             self.calculate_selection()
-        elif key == 'KEY_PPAGE':
+        elif key == 'KEY_PPAGE' or key == chr(451) or key == 'KEY_A3':
             # page up
-            self.caret.y = 0
-            self.caret.x = 0
+            self.caret = Position(0, 0)
             self.calculate_selection()
-        elif key == 'KEY_NPAGE':
+        elif key == 'KEY_NPAGE' or key == chr(457) or key == 'KEY_C3':
             # page down
-            self.caret.y = self.matrix.get_text_height() - 1
-            self.caret.x = self.matrix.get_line_length(self.caret.y)
+            self.caret = Position(
+                self.matrix.get_text_height() - 1,
+                self.matrix.get_line_length(self.caret.y)
+            )
             self.calculate_selection()
-        elif key == 'KEY_HOME':
+        elif key == 'KEY_HOME' or key == chr(449) or key == 'KEY_A1':
             # go to left
             self.caret.x = 0
             self.calculate_selection()
-        elif key == 'KEY_END':
+        elif key == 'KEY_END' or key == chr(455) or key == 'KEY_C1':
             # go to right
             self.caret.x = self.matrix.get_line_length(self.caret.y)
             self.calculate_selection()
@@ -389,5 +404,6 @@ class Editor:
                     self.mode = Constants.MODE_COMMAND
                     self.text_selected = False
                     self.save_state()
+                    self.saved = False
             finally:
                 self.cur_command = ''
