@@ -6,7 +6,6 @@ import traceback
 import zlib
 from curses import *
 
-import debug
 from matrix import Matrix, ALLOWED_CHARS
 from position import Position
 
@@ -21,6 +20,7 @@ class Editor:
     def __init__(self, stdscr, args):
         self.args = args
         self.debug_mode = args.debug
+        self.script_dir = os.path.dirname(os.path.realpath(__file__))
         # set initial values
         self.matrix = Matrix(stdscr)
         self.caret = Position(0, 0)
@@ -106,15 +106,24 @@ class Editor:
     def launch(self):
         if self.debug_mode:
             if self.args.file is None:
+                text_list = ['NONE']
+                debug_dir = os.path.join(self.script_dir, 'debug')
+                if os.path.exists(debug_dir):
+                    text_list.extend(sorted([file_name for file_name in os.listdir(debug_dir)]))
                 choice = self.matrix.display_choose(
                     [
                         'You have launched the editor in debug mode...',
                         '',
                         'Test documents:'
                     ],
-                    [text[0] for text in debug.TEXT_LIST]
+                    [text for text in text_list]
                 )
-                self.matrix.load_text(debug.TEXT_LIST[choice][1])
+                if choice == 0:
+                    self.matrix.load_text('')
+                elif os.path.exists(debug_dir):
+                    file_name = os.path.join(debug_dir, text_list[choice])
+                    with open(file_name, 'r') as text:
+                        self.matrix.load_text(text.read())
                 self.undo_stack = [(self.caret.copy(), self.compress(self.matrix.get_content()))]
             else:
                 self.matrix.display_text([

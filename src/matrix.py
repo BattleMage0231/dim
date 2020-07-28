@@ -156,7 +156,6 @@ class Matrix:
             self.stdscr.erase()
             for line in text:
                 self.stdscr.addstr(' ' + line + '\n')
-            self.stdscr.addstr('\n')
             for index, value in enumerate(choices):
                 self.stdscr.addstr('\n ')
                 self.stdscr.addstr(value, color_pair(7 if index == cur_index else 1))
