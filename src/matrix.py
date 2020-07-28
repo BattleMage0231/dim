@@ -127,10 +127,10 @@ class Matrix:
         """Displays an array of strings to the screen. Waits for user input before continuing"""
         self.update_screen_size()
         self.stdscr.erase()
-        for line in text:
-            self.stdscr.addstr(' ')
+        self.stdscr.addstr(' ' + text[0] + '\n ')
+        for line in text[1 : ]:
             self.stdscr.addstr(line)
-            self.stdscr.addstr('\n')
+            self.stdscr.addstr('\n ')
         self.stdscr.getkey()
 
     def display_prompt(self, text):

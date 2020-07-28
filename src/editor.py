@@ -222,10 +222,8 @@ class Editor:
             self.caret = Position(0, 0)
         elif key == 'KEY_NPAGE' or key == chr(457) or key == 'KEY_C3':
             # page down
-            self.caret = Position(
-                self.matrix.get_text_height() - 1,
-                self.matrix.get_line_length(self.caret.y)
-            )
+            self.caret.y = self.matrix.get_text_height() - 1
+            self.caret.x = self.matrix.get_line_length(self.caret.y)
         elif key == 'KEY_HOME' or key == chr(449) or key == 'KEY_A1':
             # go to left
             self.caret.x = 0
@@ -293,10 +291,8 @@ class Editor:
             self.caret = Position(0, 0)
         elif key == 'KEY_NPAGE' or key == chr(457) or key == 'KEY_C3':
             # page down
-            self.caret = Position(
-                self.matrix.get_text_height() - 1,
-                self.matrix.get_line_length(self.caret.y)
-            )
+            self.caret.y = self.matrix.get_text_height() - 1
+            self.caret.x = self.matrix.get_line_length(self.caret.y)
         elif key == 'KEY_HOME' or key == chr(449) or key == 'KEY_A1':
             # go to left
             self.caret.x = 0
@@ -357,10 +353,8 @@ class Editor:
             self.calculate_selection()
         elif key == 'KEY_NPAGE' or key == chr(457) or key == 'KEY_C3':
             # page down
-            self.caret = Position(
-                self.matrix.get_text_height() - 1,
-                self.matrix.get_line_length(self.caret.y)
-            )
+            self.caret.y = self.matrix.get_text_height() - 1
+            self.caret.x = self.matrix.get_line_length(self.caret.y)
             self.calculate_selection()
         elif key == 'KEY_HOME' or key == chr(449) or key == 'KEY_A1':
             # go to left
