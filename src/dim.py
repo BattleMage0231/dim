@@ -12,8 +12,9 @@ def main(stdscr):
     try:
         editor = Editor(stdscr, args)
         editor.launch()
-    except:
+    except Exception as e:
         print(traceback.format_exc())
+    print('Quit editor')
 
 if __name__ == '__main__':
     wrapper(main)

@@ -42,10 +42,10 @@ class Editor:
                 self.file_name = os.path.basename(args.file)
         except (FileNotFoundError, PermissionError, OSError):
             print('The path given is invalid.')
-            os._exit(1)
+            sys.exit(1)
         except UnicodeDecodeError:
             print('The encoding of the file is not supported.')
-            os._exit(1)
+            sys.exit(1)
         # make undo stack
         self.undo_stack = [(self.caret.copy(), self.compress(self.matrix.get_content()))]
         self.undo_ptr = 0
@@ -61,7 +61,44 @@ class Editor:
         self.undo_ptr += 1
         self.undo_stack.append((self.caret.copy(), self.compress(self.matrix.get_content())))
 
+    def resize_screen(self):
+        """
+        Resizes the area of the matrix shown to the user when the terminal window is resized.
+        """
+        height, width = (self.matrix.get_height() - 2, self.matrix.get_width() - 1)
+        cur_height = self.scr_bottomright.y - self.scr_topleft.y + 1
+        cur_width = self.scr_bottomright.x - self.scr_topleft.x + 1
+        # resize height
+        if cur_height < height:
+            # expand height
+            if height - cur_height <= self.matrix.get_text_height() - self.scr_bottomright.y - 1:
+                # only expand down
+                self.scr_bottomright.y += height - cur_height
+            else:
+                # expand both down and up
+                rem = (height - cur_height) - (self.matrix.get_text_height() - self.scr_bottomright.y - 1)
+                self.scr_bottomright.y = self.matrix.get_text_height() - 1
+                self.scr_topleft.y = max(0, self.scr_topleft.y - rem)
+        else:
+            # contract height
+            self.scr_bottomright.y -= cur_height - height
+        # resize width
+        if cur_width < width:
+            # expand width
+            if width - cur_width - 1 <= self.scr_topleft.x:
+                # only expand left
+                self.scr_topleft.x -= width - cur_width - 1
+            else:
+                # expand both left and right
+                rem = (width - cur_width - 1) - self.scr_topleft.x
+                self.scr_topleft.x = 0
+                self.scr_bottomright.x = min(self.matrix.get_max_line_length() - 1, self.scr_bottomright.x + rem)
+        else:
+            # contract width
+            self.scr_topleft.x += cur_width - width - 1
+
     def scroll_screen(self):
+        self.resize_screen()
         # scroll up down
         if self.scr_topleft.y > self.caret.y:
             self.scr_bottomright.y -= self.scr_topleft.y - self.caret.y
@@ -76,17 +113,21 @@ class Editor:
         elif self.caret.x >= self.scr_bottomright.x:
             self.scr_topleft.x += self.caret.x - self.scr_bottomright.x + 1
             self.scr_bottomright.x = self.caret.x + 1
+        self.resize_screen()
 
     def display(self):
         self.scroll_screen()
-        self.matrix.display(
-            self.matrix.get_header(self.file_name, self.mode, self.cur_command),
-            self.caret,
-            self.select_start_pos if self.text_selected else None,
-            self.select_end_pos if self.text_selected else None,
-            self.scr_topleft,
-            self.scr_bottomright
-        )
+        try:
+            self.matrix.display(
+                self.matrix.get_header(self.file_name, self.mode, self.cur_command),
+                self.caret,
+                self.select_start_pos if self.text_selected else None,
+                self.select_end_pos if self.text_selected else None,
+                self.scr_topleft,
+                self.scr_bottomright
+            )
+        except:
+            pass
 
     def get_key(self):
         return self.matrix.get_key()
@@ -135,8 +176,8 @@ class Editor:
         while True:
             key = self.get_key()
             if key == '`' and self.debug_mode:
-                os._exit(1)
-            if self.mode == MODE_COMMAND:
+                sys.exit(0)
+            elif self.mode == MODE_COMMAND:
                 self.parse_command(key)
             elif self.mode == MODE_INSERT:
                 self.parse_insert(key)
@@ -167,7 +208,7 @@ class Editor:
                         open(self.args.file, 'a').close()
                 except:
                     print('An error occured when creating the file')
-                    os._exit(1)
+                    sys.exit(1)
             try:
                 if self.args.file is not None:
                     if not os.path.isfile(self.args.file): 
@@ -176,10 +217,10 @@ class Editor:
                         edit_file.write(self.matrix.get_content())
             except (FileNotFoundError, PermissionError, OSError):
                 print('The current file can no longer be found.')
-                os._exit(1)
+                sys.exit(1)
             except UnicodeDecodeError:
                 print('The encoding of the file is not supported.')
-                os._exit(1)
+                sys.exit(1)
             self.saved = True
         elif command == 'v':
             self.mode = MODE_SELECT
@@ -214,7 +255,7 @@ class Editor:
                 )
                 if not res:
                     return
-            os._exit(1)
+            sys.exit(0)
         elif key in ALLOWED_CHARS:
             # if command fits on screen
             padding = 57 + sum(list(map(len, [self.file_name, self.mode, self.cur_command])))

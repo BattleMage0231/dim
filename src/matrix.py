@@ -46,6 +46,9 @@ class Matrix:
     def get_line_length(self, y):
         return len(self.lines[y])
 
+    def get_max_line_length(self):
+        return max([len(i) for i in self.lines])
+
     def update_screen_size(self):
         self.height, self.width = self.stdscr.getmaxyx()
 
@@ -198,7 +201,7 @@ class Matrix:
                         self.stdscr.addstr(displayed_line[select_end_pos.x - ln_start.x + 1 : ])
                     elif end_between:
                         # only end between selection
-                        # start is on same line
+                        # start is on same
                         # only ending portion is highlighted
                         self.stdscr.addstr(displayed_line[ : select_start_pos.x - ln_start.x])
                         self.stdscr.addstr(displayed_line[select_start_pos.x - ln_start.x : ], color_pair(7))
