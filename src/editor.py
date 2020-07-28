@@ -24,8 +24,8 @@ class Editor:
         # set initial values
         self.matrix = Matrix(stdscr)
         self.caret = Position(0, 0)
-        self.scr_topleft = Position(0, 0)
-        self.scr_bottomright = Position(self.matrix.get_height() - 2, self.matrix.get_width() - 1)
+        self.scr_topleft = Position(0, 0) # inclusive
+        self.scr_bottomright = Position(self.matrix.get_height() - 2, self.matrix.get_width() - 1) # inclusive
         self.select_start_pos = Position()
         self.select_end_pos = Position()
         self.text_selected = False
@@ -65,40 +65,12 @@ class Editor:
         """
         Resizes the area of the matrix shown to the user when the terminal window is resized.
         """
-        height, width = (self.matrix.get_height() - 2, self.matrix.get_width() - 1)
-        cur_height = self.scr_bottomright.y - self.scr_topleft.y + 1
-        cur_width = self.scr_bottomright.x - self.scr_topleft.x + 1
-        # resize height
-        if cur_height < height:
-            # expand height
-            if height - cur_height <= self.matrix.get_text_height() - self.scr_bottomright.y - 1:
-                # only expand down
-                self.scr_bottomright.y += height - cur_height
-            else:
-                # expand both down and up
-                rem = (height - cur_height) - (self.matrix.get_text_height() - self.scr_bottomright.y - 1)
-                self.scr_bottomright.y = self.matrix.get_text_height() - 1
-                self.scr_topleft.y = max(0, self.scr_topleft.y - rem)
-        else:
-            # contract height
-            self.scr_bottomright.y -= cur_height - height
-        # resize width
-        if cur_width < width:
-            # expand width
-            if width - cur_width - 1 <= self.scr_topleft.x:
-                # only expand left
-                self.scr_topleft.x -= width - cur_width - 1
-            else:
-                # expand both left and right
-                rem = (width - cur_width - 1) - self.scr_topleft.x
-                self.scr_topleft.x = 0
-                self.scr_bottomright.x = min(self.matrix.get_max_line_length() - 1, self.scr_bottomright.x + rem)
-        else:
-            # contract width
-            self.scr_topleft.x += cur_width - width - 1
+        # there was much more code here previously which adjusted the screen
+        # however, it is much more easy and efficient to just rely on the scroll_screen function
+        self.scr_topleft = Position(0, 0)
+        self.scr_bottomright = Position(self.matrix.get_height() - 2, self.matrix.get_width() - 1)
 
     def scroll_screen(self):
-        self.resize_screen()
         # scroll up down
         if self.scr_topleft.y > self.caret.y:
             self.scr_bottomright.y -= self.scr_topleft.y - self.caret.y
@@ -113,9 +85,9 @@ class Editor:
         elif self.caret.x >= self.scr_bottomright.x:
             self.scr_topleft.x += self.caret.x - self.scr_bottomright.x + 1
             self.scr_bottomright.x = self.caret.x + 1
-        self.resize_screen()
 
     def display(self):
+        self.matrix.update_screen_size()
         self.scroll_screen()
         try:
             self.matrix.display(
@@ -177,6 +149,9 @@ class Editor:
             key = self.get_key()
             if key == '`' and self.debug_mode:
                 sys.exit(0)
+            elif key == 'KEY_RESIZE':
+                self.matrix.update_screen_size()
+                self.resize_screen()
             elif self.mode == MODE_COMMAND:
                 self.parse_command(key)
             elif self.mode == MODE_INSERT:
