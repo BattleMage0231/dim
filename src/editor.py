@@ -14,6 +14,9 @@ MODE_INSERT = 'INSERT'
 MODE_COMMAND = 'COMMAND'
 MODE_SELECT = 'SELECT'
 
+# editor constants
+MAX_COMMAND_LENGTH = 20
+
 ### TODO add syntax highlighting (highlighting overrides syntax highlighting) ###
 
 class Editor:
@@ -40,11 +43,11 @@ class Editor:
                 with open(args.file, 'r') as edit_file:
                     self.matrix.load_text(edit_file.read())
                 self.file_name = os.path.basename(args.file)
-        except (FileNotFoundError, PermissionError, OSError):
-            print('The path given is invalid.')
+        except (FileNotFoundError, PermissionError, OSError) as e:
+            print('The path given is invalid or inaccessible.\n')
             sys.exit(1)
-        except UnicodeDecodeError:
-            print('The encoding of the file is not supported.')
+        except UnicodeDecodeError as e:
+            print('The encoding of the file is not supported.\n')
             sys.exit(1)
         # make undo stack
         self.undo_stack = [(self.caret.copy(), self.compress(self.matrix.get_content()))]
@@ -69,7 +72,6 @@ class Editor:
         # however, it is much more easy and efficient to just rely on the scroll_screen function
         self.scr_topleft = Position(0, 0)
         self.scr_bottomright = Position(self.matrix.get_height() - 2, self.matrix.get_width() - 1)
-        # 
 
     def scroll_screen(self):
         # scroll up down
@@ -142,6 +144,10 @@ class Editor:
                     '',
                     'Press any key to continue.'
                 ])
+        if self.args.read_only:
+            self.matrix.display_text([
+                'The editor has been opened in read only mode. Press any key to continue.'
+            ])
         self.display()
         while True:
             key = self.get_key()
@@ -164,6 +170,11 @@ class Editor:
             self.text_selected = False
             self.mode = MODE_INSERT
         elif command == 's':
+            if self.args.read_only:
+                self.matrix.display_text([
+                    'This file cannot be written to. The editor may have been launched in read only mode.'
+                ])
+                return
             if self.debug_mode:
                 res = self.matrix.display_confirm(
                     'Confirm that you want to save the file (type \'save\'): ',
@@ -180,7 +191,7 @@ class Editor:
                     if not os.path.isfile(self.args.file):
                         open(self.args.file, 'a').close()
                 except:
-                    print('An error occured when creating the file')
+                    print('An error occured when creating the file.\n')
                     sys.exit(1)
             try:
                 if self.args.file is not None:
@@ -189,10 +200,10 @@ class Editor:
                     with open(self.args.file, 'w') as edit_file:
                         edit_file.write(self.matrix.get_content())
             except (FileNotFoundError, PermissionError, OSError):
-                print('The current file can no longer be found.')
+                print('The current file can no longer be found.\n')
                 sys.exit(1)
             except UnicodeDecodeError:
-                print('The encoding of the file is not supported.')
+                print('The encoding of the file is not supported.\n')
                 sys.exit(1)
             self.saved = True
         elif command == 'v':
@@ -221,7 +232,7 @@ class Editor:
     def parse_command(self, key):
         if key == chr(27):
             # escape
-            if not self.saved:
+            if not self.saved and not self.args.read_only:
                 res = self.matrix.display_confirm(
                     'Do you want to quit without saving? (y/n): ',
                     'y'
@@ -230,8 +241,7 @@ class Editor:
                     return
             sys.exit(0)
         elif key in ALLOWED_CHARS:
-            # maximum size of command is 20
-            if len(self.cur_command) < 20:
+            if len(self.cur_command) < MAX_COMMAND_LENGTH:
                 self.cur_command += key
         elif key == '\b' or key == 'KEY_BACKSPACE':
             self.cur_command = self.cur_command[ : -1]
@@ -354,8 +364,7 @@ class Editor:
             self.text_selected = False
             self.mode = MODE_COMMAND
         elif key in ALLOWED_CHARS:
-            # maximum size of command is 20
-            if len(self.cur_command) < 20:
+            if len(self.cur_command) < MAX_COMMAND_LENGTH:
                 self.cur_command += key
         elif key == '\b' or key == 'KEY_BACKSPACE':
             self.cur_command = self.cur_command[ : -1]
@@ -428,3 +437,6 @@ class Editor:
                     self.saved = False
             finally:
                 self.cur_command = ''
+
+if __name__ == '__main__':
+    print('This is a helper file used by the editor. If you are looking to open the editor, try dim.py.')

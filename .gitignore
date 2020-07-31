@@ -1,3 +1,6 @@
 __pycache__
 tests
 .vscode
+
+# temporary file storing command syntax
+docs/documentation.md 

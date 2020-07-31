@@ -4,11 +4,11 @@ Simple terminal text editor based on Vim
 
 # Installation
 
-## Downloading Executable
+## Precompiled Binary
 
-There are two zip files that you can download for Windows and Mac/Linux and then extract in the releases tab.
+There are two zip files that you can download for Windows and Mac/Linux and then extract in the releases tab. The executables can be found inside the folders.
 
-The executables can be found inside the folders.
+There may also be zip files which contain compiled binaries that are bound inside a single executable. These executables seem to be significantly slower than the multifile version.
 
 ## Building Manually
 
@@ -22,12 +22,16 @@ python src/dim.py
 
 To build the executable yourself, run the following commands.
 
-Note: you may want to use a virtual environment to install PyInstaller.
+Note: you may want to use a virtual environment to install these dependencies.
 
 ```bash
-pip install pyinstaller
-pyinstaller src/dim.py --add-data "src/debug/*:debug" # on Mac/Linux
-pyinstaller src/dim.py --add-data "src/debug/*;debug" # on Windows
+# Windows:
+pip install windows-curses
+pip install pyinstaller # or a similar tool
+pyinstaller src/dim.py --add-data "src/debug/*;debug" --add-data "src/resources/*;resources"
+# Mac/Linux
+pip install pyinstaller # or a similar tool
+pyinstaller src/dim.py --add-data "src/debug/*:debug" --add-data "src/resources/*:resources"
 ```
 
 This should build a dist folder and inside it a dim folder. Your executable will be found in the dim folder.

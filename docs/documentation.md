@@ -1,3 +1,7 @@
+<!---
+Remove this file before production.
+-->
+
 # Editor Documentation
 This document contains a list of commands that can be used in dim. Most of the commands are usable in command or select mode.
 
