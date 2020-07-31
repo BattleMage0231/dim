@@ -14,7 +14,7 @@ COLORS = [
 
 ALLOWED_CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ '
 
-class Matrix:
+class Buffer:
     def __init__(self, stdscr):
         # set initial values
         self.stdscr = stdscr
@@ -166,7 +166,7 @@ class Matrix:
             key = self.stdscr.getkey()  
         return cur_index    
 
-    def display(self, header, caret, select_start_pos, select_end_pos, scr_topleft, scr_bottomright):
+    def flush(self, header, caret, select_start_pos, select_end_pos, scr_topleft, scr_bottomright):
         """Displays to the given screen"""
         self.update_screen_size()
         self.stdscr.erase()

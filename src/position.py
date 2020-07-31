@@ -1,9 +1,10 @@
 class Position:
-    def __init__(self, y = None, x = None):
+    def __init__(self, y, x):
         self.y = y
         self.x = x
 
-    def move_left(self, grid, spaces = 1):
+    def move_left(self, buffer, spaces = 1):
+        grid = buffer.get_lines()
         if not grid:
             return
         self.x -= spaces
@@ -20,7 +21,8 @@ class Position:
         else:
             self.x += min(1, len(grid[self.y]))
 
-    def move_right(self, grid, spaces = 1):
+    def move_right(self, buffer, spaces = 1):
+        grid = buffer.get_lines()
         if not grid:
             return
         self.x += spaces
@@ -38,7 +40,8 @@ class Position:
         else:
             self.x = max(0, spaces + len(grid[self.y]) - 1)
 
-    def move_up(self, grid, spaces = 1):
+    def move_up(self, buffer, spaces = 1):
+        grid = buffer.get_lines()
         if not grid:
             return
         self.y -= spaces
@@ -46,7 +49,8 @@ class Position:
             self.y = 0
         self.x = min(len(grid[self.y]), self.x)
 
-    def move_down(self, grid, spaces = 1):
+    def move_down(self, buffer, spaces = 1):
+        grid = buffer.get_lines()
         if not grid:
             return
         self.y += spaces
@@ -90,3 +94,5 @@ class Position:
 
     def __repr__(self):
         return f'({self.y}, {self.x})'
+
+NULL_POS = Position(None, None)

@@ -6,8 +6,9 @@ import traceback
 import zlib
 from curses import *
 
-from matrix import Matrix, ALLOWED_CHARS
-from position import Position
+from buffer import Buffer, ALLOWED_CHARS
+from position import Position, NULL_POS
+from state import StateManager
 
 # editor mode constants
 MODE_INSERT = 'INSERT'
@@ -25,23 +26,23 @@ class Editor:
         self.debug_mode = args.debug
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
         # set initial values
-        self.matrix = Matrix(stdscr)
+        self.buffer = Buffer(stdscr)
+        self.state_manager = StateManager()
         self.caret = Position(0, 0)
         self.scr_topleft = Position(0, 0) # inclusive
-        self.scr_bottomright = Position(self.matrix.get_height() - 2, self.matrix.get_width() - 1) # inclusive
-        self.select_start_pos = Position()
-        self.select_end_pos = Position()
+        self.scr_bottomright = Position(self.buffer.get_height() - 2, self.buffer.get_width() - 1) # inclusive
+        self.select_start_pos = Position(None, None)
+        self.select_end_pos = NULL_POS
         self.text_selected = False
         self.last_selection_before = True
         self.file_name = 'None'
         self.mode = MODE_COMMAND
         self.cur_command = ''
-        self.saved = True
         # try to find a file
         try:
             if args.file is not None:
                 with open(args.file, 'r') as edit_file:
-                    self.matrix.load_text(edit_file.read())
+                    self.buffer.load_text(edit_file.read())
                 self.file_name = os.path.basename(args.file)
         except (FileNotFoundError, PermissionError, OSError) as e:
             print('The path given is invalid or inaccessible.\n')
@@ -49,20 +50,8 @@ class Editor:
         except UnicodeDecodeError as e:
             print('The encoding of the file is not supported.\n')
             sys.exit(1)
-        # make undo stack
-        self.undo_stack = [(self.caret.copy(), self.compress(self.matrix.get_content()))]
-        self.undo_ptr = 0
-
-    def compress(self, message):
-        return zlib.compress(message.encode('utf8'))
-
-    def decompress(self, message):
-        return zlib.decompress(message).decode('utf8')
-
-    def save_state(self):
-        self.undo_stack = self.undo_stack[ : self.undo_ptr + 1]
-        self.undo_ptr += 1
-        self.undo_stack.append((self.caret.copy(), self.compress(self.matrix.get_content())))
+        # push initial state
+        self.state_manager.push_state(self.caret.copy(), self.buffer.get_content())
 
     def resize_screen(self):
         """
@@ -71,7 +60,7 @@ class Editor:
         # there was much more code here previously which adjusted the screen
         # however, it is much more easy and efficient to just rely on the scroll_screen function
         self.scr_topleft = Position(0, 0)
-        self.scr_bottomright = Position(self.matrix.get_height() - 2, self.matrix.get_width() - 1)
+        self.scr_bottomright = Position(self.buffer.get_height() - 2, self.buffer.get_width() - 1)
 
     def scroll_screen(self):
         # scroll up down
@@ -90,10 +79,10 @@ class Editor:
             self.scr_bottomright.x = self.caret.x + 1
 
     def display(self):
-        self.matrix.update_screen_size()
+        self.buffer.update_screen_size()
         self.scroll_screen()
-        self.matrix.display(
-            self.matrix.get_header(self.file_name, self.mode, self.cur_command),
+        self.buffer.flush(
+            self.buffer.get_header(self.file_name, self.mode, self.cur_command),
             self.caret,
             self.select_start_pos if self.text_selected else None,
             self.select_end_pos if self.text_selected else None,
@@ -101,20 +90,11 @@ class Editor:
             self.scr_bottomright
         )
 
+    def push_state(self):
+        self.state_manager.push_state(self.caret, self.buffer.get_content())
+
     def get_key(self):
-        return self.matrix.get_key()
-
-    def move_left(self, pos, spaces = 1):
-        pos.move_left(self.matrix.get_lines(), spaces)
-
-    def move_right(self, pos, spaces = 1):
-        pos.move_right(self.matrix.get_lines(), spaces)
-
-    def move_up(self, pos, spaces = 1):
-        pos.move_up(self.matrix.get_lines(), spaces)
-
-    def move_down(self, pos, spaces = 1):
-        pos.move_down(self.matrix.get_lines(), spaces)
+        return self.buffer.get_key()
 
     def launch(self):
         if self.debug_mode:
@@ -123,7 +103,7 @@ class Editor:
                 debug_dir = os.path.join(self.script_dir, 'debug')
                 if os.path.exists(debug_dir):
                     text_list.extend(sorted([file_name for file_name in os.listdir(debug_dir)]))
-                choice = self.matrix.display_choose(
+                choice = self.buffer.display_choose(
                     [
                         'You have launched the editor in debug mode...',
                         '',
@@ -132,20 +112,21 @@ class Editor:
                     [text for text in text_list]
                 )
                 if choice == 0:
-                    self.matrix.load_text('')
+                    self.buffer.load_text('')
                 elif os.path.exists(debug_dir):
                     file_name = os.path.join(debug_dir, text_list[choice])
                     with open(file_name, 'r') as text:
-                        self.matrix.load_text(text.read())
-                self.undo_stack = [(self.caret.copy(), self.compress(self.matrix.get_content()))]
+                        self.buffer.load_text(text.read())
+                self.state_manager.clear_stack()
+                self.state_manager.push_state(self.caret.copy(), self.buffer.get_content())
             else:
-                self.matrix.display_text([
+                self.buffer.display_text([
                     'You have launched the editor in debug mode...',
                     '',
                     'Press any key to continue.'
                 ])
         if self.args.read_only:
-            self.matrix.display_text([
+            self.buffer.display_text([
                 'The editor has been opened in read only mode. Press any key to continue.'
             ])
         self.display()
@@ -154,7 +135,7 @@ class Editor:
             if key == '`' and self.debug_mode:
                 sys.exit(0)
             elif key == 'KEY_RESIZE':
-                self.matrix.update_screen_size()
+                self.buffer.update_screen_size()
                 self.resize_screen()
             elif self.mode == MODE_COMMAND:
                 self.parse_command(key)
@@ -171,12 +152,12 @@ class Editor:
             self.mode = MODE_INSERT
         elif command == 's':
             if self.args.read_only:
-                self.matrix.display_text([
+                self.buffer.display_text([
                     'This file cannot be written to. The editor may have been launched in read only mode.'
                 ])
                 return
             if self.debug_mode:
-                res = self.matrix.display_confirm(
+                res = self.buffer.display_confirm(
                     'Confirm that you want to save the file (type \'save\'): ',
                     'save'
                 )
@@ -185,7 +166,7 @@ class Editor:
                     # True means that the command was found as a general command
                     return True
             if self.args.file is None:
-                self.args.file = self.matrix.display_prompt('Enter the name of the file: ')
+                self.args.file = self.buffer.display_prompt('Enter the name of the file: ')
                 self.file_name = os.path.basename(self.args.file)
                 try:
                     if not os.path.isfile(self.args.file):
@@ -198,14 +179,14 @@ class Editor:
                     if not os.path.isfile(self.args.file): 
                         raise FileNotFoundError
                     with open(self.args.file, 'w') as edit_file:
-                        edit_file.write(self.matrix.get_content())
+                        edit_file.write(self.buffer.get_content())
             except (FileNotFoundError, PermissionError, OSError):
                 print('The current file can no longer be found.\n')
                 sys.exit(1)
             except UnicodeDecodeError:
                 print('The encoding of the file is not supported.\n')
                 sys.exit(1)
-            self.saved = True
+            self.state_manager.saved = True
         elif command == 'v':
             self.mode = MODE_SELECT
             self.select_start_pos = self.caret.copy()
@@ -213,18 +194,14 @@ class Editor:
             self.text_selected = True
             self.last_selection_before = True
         elif command == 'z':
-            self.undo_ptr = max(0, self.undo_ptr - 1)
-            caret, compressed = self.undo_stack[self.undo_ptr]
+            caret, text = self.state_manager.undo()
             self.caret = caret.copy()
-            self.matrix.load_text(self.decompress(compressed))
-            self.saved = False
+            self.buffer.load_text(text)
         elif command == 'y':
-            if self.undo_ptr + 1 < len(self.undo_stack):
-                self.undo_ptr += 1
-                caret, compressed = self.undo_stack[self.undo_ptr]
+            caret, text = self.state_manager.redo()
+            if caret is not None and text is not None:
                 self.caret = caret.copy()
-                self.matrix.load_text(self.decompress(compressed))
-                self.saved = False
+                self.buffer.load_text(text)
         else:
             return False
         return True
@@ -232,8 +209,8 @@ class Editor:
     def parse_command(self, key):
         if key == chr(27):
             # escape
-            if not self.saved and not self.args.read_only:
-                res = self.matrix.display_confirm(
+            if not self.screen_manager.saved and not self.args.read_only:
+                res = self.buffer.display_confirm(
                     'Do you want to quit without saving? (y/n): ',
                     'y'
                 )
@@ -246,36 +223,35 @@ class Editor:
         elif key == '\b' or key == 'KEY_BACKSPACE':
             self.cur_command = self.cur_command[ : -1]
         elif key == chr(452) or key == 'KEY_LEFT' or key == 'KEY_B1':
-            self.move_left(self.caret)
+            self.caret.move_left(self.buffer)
         elif key == chr(454) or key == 'KEY_RIGHT' or key == 'KEY_B3':
-            self.move_right(self.caret)
+            self.caret.move_right(self.buffer)
         elif key == chr(450) or key == 'KEY_UP' or key == 'KEY_A2':
-            self.move_up(self.caret)
+            self.caret.move_up(self.buffer)
         elif key == chr(456) or key == 'KEY_DOWN' or key == 'KEY_C2':
-            self.move_down(self.caret)
+            self.caret.move_down(self.buffer)
         elif key == 'KEY_PPAGE' or key == chr(451) or key == 'KEY_A3':
             # page up
             self.caret = Position(0, 0)
         elif key == 'KEY_NPAGE' or key == chr(457) or key == 'KEY_C3':
             # page down
-            self.caret.y = self.matrix.get_text_height() - 1
-            self.caret.x = self.matrix.get_line_length(self.caret.y)
+            self.caret.y = self.buffer.get_text_height() - 1
+            self.caret.x = self.buffer.get_line_length(self.caret.y)
         elif key == 'KEY_HOME' or key == chr(449) or key == 'KEY_A1':
             # go to left
             self.caret.x = 0
         elif key == 'KEY_END' or key == chr(455) or key == 'KEY_C1':
             # go to right
-            self.caret.x = self.matrix.get_line_length(self.caret.y)
+            self.caret.x = self.buffer.get_line_length(self.caret.y)
         elif key == '\n' or key == chr(13):
             try:
                 if self.parse_general_command(self.cur_command):
                     pass
                 elif self.cur_command == 'x':
-                    self.matrix.delete_substr(
+                    self.buffer.delete_substr(
                         self.caret.y, self.caret.x, self.caret.x + 1
                     )
-                    self.save_state()
-                    self.saved = False
+                    self.push_state()
             finally:
                 self.cur_command = ''
 
@@ -286,61 +262,56 @@ class Editor:
         elif key == '\b' or key == 'KEY_BACKSPACE':
             # backspace
             if self.caret.x != 0:
-                self.matrix.delete_substr(
+                self.buffer.delete_substr(
                     self.caret.y, self.caret.x - 1, self.caret.x
                 )
-                self.move_left(self.caret)
-                self.save_state()
-                self.saved = False
+                self.caret.move_left(self.buffer)
+                self.push_state()
             elif self.caret.y != 0:
                 # concatenate two lines
-                self.caret.x = self.matrix.get_line_length(self.caret.y - 1)
-                self.matrix.join(self.caret.y - 1, self.caret.y)
+                self.caret.x = self.buffer.get_line_length(self.caret.y - 1)
+                self.buffer.join(self.caret.y - 1, self.caret.y)
                 self.caret.y -= 1
-                self.save_state()
-                self.saved = False
+                self.push_state()
         elif key == '\t':
             # tab
-            self.matrix.insert(self.caret.y, self.caret.x, ' ' * 4)
+            self.buffer.insert(self.caret.y, self.caret.x, ' ' * 4)
             self.caret.x += 4
-            self.save_state()
-            self.saved = False
+            self.push_state()
         elif key == '\n' or key == chr(13):
             # newline or carriage return
-            if self.caret.x > self.matrix.get_line_length(self.caret.y):
-                self.matrix.lines.insert(self.caret.y + 1, '')
+            if self.caret.x > self.buffer.get_line_length(self.caret.y):
+                self.buffer.lines.insert(self.caret.y + 1, '')
             else:
-                self.matrix.split_line(self.caret.y, self.caret.x)
+                self.buffer.split_line(self.caret.y, self.caret.x)
             self.caret = Position(self.caret.y + 1, 0)
-            self.save_state()
-            self.saved = False
+            self.push_state()
         elif key == chr(452) or key == 'KEY_LEFT' or key == 'KEY_B1':
-            self.move_left(self.caret)
+            self.caret.move_left(self.buffer)
         elif key == chr(454) or key == 'KEY_RIGHT' or key == 'KEY_B3':
-            self.move_right(self.caret)
+            self.caret.move_right(self.buffer)
         elif key == chr(450) or key == 'KEY_UP' or key == 'KEY_A2':
-            self.move_up(self.caret)
+            self.caret.move_up(self.buffer)
         elif key == chr(456) or key == 'KEY_DOWN' or key == 'KEY_C2':
-            self.move_down(self.caret)
+            self.caret.move_down(self.buffer)
         elif key == 'KEY_PPAGE' or key == chr(451) or key == 'KEY_A3':
             # page up
             self.caret = Position(0, 0)
         elif key == 'KEY_NPAGE' or key == chr(457) or key == 'KEY_C3':
             # page down
-            self.caret.y = self.matrix.get_text_height() - 1
-            self.caret.x = self.matrix.get_line_length(self.caret.y)
+            self.caret.y = self.buffer.get_text_height() - 1
+            self.caret.x = self.buffer.get_line_length(self.caret.y)
         elif key == 'KEY_HOME' or key == chr(449) or key == 'KEY_A1':
             # go to left
             self.caret.x = 0
         elif key == 'KEY_END' or key == chr(455) or key == 'KEY_C1':
             # go to right
-            self.caret.x = self.matrix.get_line_length(self.caret.y)
+            self.caret.x = self.buffer.get_line_length(self.caret.y)
         elif key in ALLOWED_CHARS:
             # allowed text characters
-            self.matrix.insert(self.caret.y, self.caret.x, key)
+            self.buffer.insert(self.caret.y, self.caret.x, key)
             self.caret.x += 1 
-            self.save_state()
-            self.saved = False
+            self.push_state()
 
     def calculate_selection(self):
         if self.caret.is_before(self.select_start_pos):
@@ -369,16 +340,16 @@ class Editor:
         elif key == '\b' or key == 'KEY_BACKSPACE':
             self.cur_command = self.cur_command[ : -1]
         elif key == chr(452) or key == 'KEY_LEFT' or key == 'KEY_B1' or key == '\b' or key == 'KEY_BACKSPACE':
-            self.move_left(self.caret)
+            self.caret.move_left(self.buffer)
             self.calculate_selection()
         elif key == chr(454) or key == 'KEY_RIGHT' or key == 'KEY_B3' or key == ' ':
-            self.move_right(self.caret)
+            self.caret.move_right(self.buffer)
             self.calculate_selection()
         elif key == chr(450) or key == 'KEY_UP' or key == 'KEY_A2':
-            self.move_up(self.caret)
+            self.caret.move_up(self.buffer)
             self.calculate_selection()
         elif key == chr(456) or key == 'KEY_DOWN' or key == 'KEY_C2':
-            self.move_down(self.caret)
+            self.caret.move_down(self.buffer)
             self.calculate_selection()
         elif key == 'KEY_PPAGE' or key == chr(451) or key == 'KEY_A3':
             # page up
@@ -386,8 +357,8 @@ class Editor:
             self.calculate_selection()
         elif key == 'KEY_NPAGE' or key == chr(457) or key == 'KEY_C3':
             # page down
-            self.caret.y = self.matrix.get_text_height() - 1
-            self.caret.x = self.matrix.get_line_length(self.caret.y)
+            self.caret.y = self.buffer.get_text_height() - 1
+            self.caret.x = self.buffer.get_line_length(self.caret.y)
             self.calculate_selection()
         elif key == 'KEY_HOME' or key == chr(449) or key == 'KEY_A1':
             # go to left
@@ -395,7 +366,7 @@ class Editor:
             self.calculate_selection()
         elif key == 'KEY_END' or key == chr(455) or key == 'KEY_C1':
             # go to right
-            self.caret.x = self.matrix.get_line_length(self.caret.y)
+            self.caret.x = self.buffer.get_line_length(self.caret.y)
             self.calculate_selection()
         elif key == '\n' or key == chr(13):
             try:
@@ -407,7 +378,7 @@ class Editor:
                     if self.select_start_pos.y == self.select_end_pos.y:
                         # delete substring
                         dif = self.select_end_pos.x - self.select_start_pos.x + 1
-                        self.matrix.delete_substr(
+                        self.buffer.delete_substr(
                             self.select_start_pos.y,
                             self.select_start_pos.x,
                             self.select_start_pos.x + dif
@@ -416,25 +387,24 @@ class Editor:
                         # delete inbetween
                         index = self.select_start_pos.y + 1
                         for _ in range(index, self.select_end_pos.y):
-                            self.matrix.pop_line(index)
+                            self.buffer.pop_line(index)
                         # delete ending of start
-                        spaces = self.matrix.get_line_length(self.select_start_pos.y) - self.select_start_pos.x
-                        self.matrix.delete_substr(
+                        spaces = self.buffer.get_line_length(self.select_start_pos.y) - self.select_start_pos.x
+                        self.buffer.delete_substr(
                             self.select_start_pos.y,
                             self.select_start_pos.x,
                             self.select_start_pos.x + spaces
                         )
                         # delete starting of end
                         spaces = self.select_end_pos.x + 1
-                        self.matrix.delete_substr(
+                        self.buffer.delete_substr(
                             index, 0, spaces
                         )
-                        if self.matrix.get_line(index) == '':
-                            self.matrix.pop_line(index)
+                        if self.buffer.get_line(index) == '':
+                            self.buffer.pop_line(index)
                     self.mode = MODE_COMMAND
                     self.text_selected = False
-                    self.save_state()
-                    self.saved = False
+                    self.push_state()
             finally:
                 self.cur_command = ''
 
