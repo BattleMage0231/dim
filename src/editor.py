@@ -69,6 +69,7 @@ class Editor:
         # however, it is much more easy and efficient to just rely on the scroll_screen function
         self.scr_topleft = Position(0, 0)
         self.scr_bottomright = Position(self.matrix.get_height() - 2, self.matrix.get_width() - 1)
+        # 
 
     def scroll_screen(self):
         # scroll up down
@@ -89,17 +90,14 @@ class Editor:
     def display(self):
         self.matrix.update_screen_size()
         self.scroll_screen()
-        try:
-            self.matrix.display(
-                self.matrix.get_header(self.file_name, self.mode, self.cur_command),
-                self.caret,
-                self.select_start_pos if self.text_selected else None,
-                self.select_end_pos if self.text_selected else None,
-                self.scr_topleft,
-                self.scr_bottomright
-            )
-        except:
-            pass
+        self.matrix.display(
+            self.matrix.get_header(self.file_name, self.mode, self.cur_command),
+            self.caret,
+            self.select_start_pos if self.text_selected else None,
+            self.select_end_pos if self.text_selected else None,
+            self.scr_topleft,
+            self.scr_bottomright
+        )
 
     def get_key(self):
         return self.matrix.get_key()
@@ -232,10 +230,8 @@ class Editor:
                     return
             sys.exit(0)
         elif key in ALLOWED_CHARS:
-            # if command fits on screen
-            padding = 57 + sum(list(map(len, [self.file_name, self.mode, self.cur_command])))
-            self.matrix.update_screen_size()
-            if self.matrix.get_width() - padding > 0:
+            # maximum size of command is 20
+            if len(self.cur_command) < 20:
                 self.cur_command += key
         elif key == '\b' or key == 'KEY_BACKSPACE':
             self.cur_command = self.cur_command[ : -1]
@@ -358,10 +354,8 @@ class Editor:
             self.text_selected = False
             self.mode = MODE_COMMAND
         elif key in ALLOWED_CHARS:
-            # if command fits on screen
-            padding = 57 + sum(list(map(len, [self.file_name, self.mode, self.cur_command])))
-            self.matrix.update_screen_size()
-            if self.matrix.get_width() - padding > 0:
+            # maximum size of command is 20
+            if len(self.cur_command) < 20:
                 self.cur_command += key
         elif key == '\b' or key == 'KEY_BACKSPACE':
             self.cur_command = self.cur_command[ : -1]

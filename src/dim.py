@@ -13,8 +13,11 @@ def main(stdscr):
         editor = Editor(stdscr, args)
         editor.launch()
     except Exception as e:
-        print(traceback.format_exc())
-    print('Quit editor')
+        if type(e) == SystemError:
+            print('Successfully exited editor.')
+        else:
+            print('A fatal error has occured.\n')
+            print(traceback.format_exc())
 
 if __name__ == '__main__':
     wrapper(main)

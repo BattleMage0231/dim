@@ -84,22 +84,22 @@ class Matrix:
         dif = self.get_substr(y, x, None) # None = to end of line
         self.lines[y] = self.get_substr(y, 0, x)
         self.insert_line(y + 1, dif)
-
+        
     def get_header(self, file_name, mode, cur_command):
         self.update_screen_size()
-        padding = (self.width - 56 - len(file_name) - len(mode) - len(cur_command))
-        header = [
+        justified_left = [
             (' Dim',                        3), 
             (' ' * 8,                       2),
             ('Editing ' + file_name,        4),
             (' ' * 20,                      2),
             (cur_command,                   6),
-            (' ' * padding,                 2),
+        ]
+        justified_right = [
             ('Mode: ' + mode,               5),
             (' ' * 10,                      2),
-            ('─' * self.width,              2) # horizontal bar
         ]
-        return header
+        padding = (self.width - sum([len(i) for i, j in (justified_left + justified_right)]))
+        return justified_left + [(' ' * padding, 2)] + justified_right + [('─' * self.width, 2)]
 
     def get_key(self):
         return self.stdscr.getkey()
