@@ -207,9 +207,8 @@ class Editor:
         return True
 
     def parse_command(self, key):
-        if key == chr(27):
-            # escape
-            if not self.screen_manager.saved and not self.args.read_only:
+        if key == 'KEY_ESCAPE':
+            if not self.state_manager.saved and not self.args.read_only:
                 res = self.buffer.display_confirm(
                     'Do you want to quit without saving? (y/n): ',
                     'y'
@@ -220,30 +219,28 @@ class Editor:
         elif key in ALLOWED_CHARS:
             if len(self.cur_command) < MAX_COMMAND_LENGTH:
                 self.cur_command += key
-        elif key == '\b' or key == 'KEY_BACKSPACE':
+        elif key == 'KEY_BACKSPACE':
             self.cur_command = self.cur_command[ : -1]
-        elif key == chr(452) or key == 'KEY_LEFT' or key == 'KEY_B1':
+        elif key == 'KEY_LEFT':
             self.caret.move_left(self.buffer)
-        elif key == chr(454) or key == 'KEY_RIGHT' or key == 'KEY_B3':
+        elif key == 'KEY_RIGHT':
             self.caret.move_right(self.buffer)
-        elif key == chr(450) or key == 'KEY_UP' or key == 'KEY_A2':
+        elif key == 'KEY_UP':
             self.caret.move_up(self.buffer)
-        elif key == chr(456) or key == 'KEY_DOWN' or key == 'KEY_C2':
+        elif key == 'KEY_DOWN':
             self.caret.move_down(self.buffer)
-        elif key == 'KEY_PPAGE' or key == chr(451) or key == 'KEY_A3':
-            # page up
+        elif key == 'KEY_PAGE_UP':
             self.caret = Position(0, 0)
-        elif key == 'KEY_NPAGE' or key == chr(457) or key == 'KEY_C3':
-            # page down
+        elif key == 'KEY_PAGE_DOWN':
             self.caret.y = self.buffer.get_text_height() - 1
             self.caret.x = self.buffer.get_line_length(self.caret.y)
-        elif key == 'KEY_HOME' or key == chr(449) or key == 'KEY_A1':
+        elif key == 'KEY_HOME':
             # go to left
             self.caret.x = 0
-        elif key == 'KEY_END' or key == chr(455) or key == 'KEY_C1':
+        elif key == 'KEY_END':
             # go to right
             self.caret.x = self.buffer.get_line_length(self.caret.y)
-        elif key == '\n' or key == chr(13):
+        elif key == 'KEY_NEWLINE':
             try:
                 if self.parse_general_command(self.cur_command):
                     pass
@@ -256,11 +253,9 @@ class Editor:
                 self.cur_command = ''
 
     def parse_insert(self, key):
-        if key == chr(27):
-            # escape
+        if key == 'KEY_ESCAPE':
             self.mode = MODE_COMMAND
-        elif key == '\b' or key == 'KEY_BACKSPACE':
-            # backspace
+        elif key == 'KEY_BACKSPACE':
             if self.caret.x != 0:
                 self.buffer.delete_substr(
                     self.caret.y, self.caret.x - 1, self.caret.x
@@ -273,38 +268,34 @@ class Editor:
                 self.buffer.join(self.caret.y - 1, self.caret.y)
                 self.caret.y -= 1
                 self.push_state()
-        elif key == '\t':
-            # tab
+        elif key == 'KEY_TAB':
             self.buffer.insert(self.caret.y, self.caret.x, ' ' * 4)
             self.caret.x += 4
             self.push_state()
-        elif key == '\n' or key == chr(13):
-            # newline or carriage return
+        elif key == 'KEY_NEWLINE':
             if self.caret.x > self.buffer.get_line_length(self.caret.y):
                 self.buffer.lines.insert(self.caret.y + 1, '')
             else:
                 self.buffer.split_line(self.caret.y, self.caret.x)
             self.caret = Position(self.caret.y + 1, 0)
             self.push_state()
-        elif key == chr(452) or key == 'KEY_LEFT' or key == 'KEY_B1':
+        elif key == 'KEY_LEFT':
             self.caret.move_left(self.buffer)
-        elif key == chr(454) or key == 'KEY_RIGHT' or key == 'KEY_B3':
+        elif key == 'KEY_RIGHT':
             self.caret.move_right(self.buffer)
-        elif key == chr(450) or key == 'KEY_UP' or key == 'KEY_A2':
+        elif key == 'KEY_UP':
             self.caret.move_up(self.buffer)
-        elif key == chr(456) or key == 'KEY_DOWN' or key == 'KEY_C2':
+        elif key == 'KEY_DOWN':
             self.caret.move_down(self.buffer)
-        elif key == 'KEY_PPAGE' or key == chr(451) or key == 'KEY_A3':
-            # page up
+        elif key == 'KEY_PAGE_UP':
             self.caret = Position(0, 0)
-        elif key == 'KEY_NPAGE' or key == chr(457) or key == 'KEY_C3':
-            # page down
+        elif key == 'KEY_PAGE_DOWN':
             self.caret.y = self.buffer.get_text_height() - 1
             self.caret.x = self.buffer.get_line_length(self.caret.y)
-        elif key == 'KEY_HOME' or key == chr(449) or key == 'KEY_A1':
+        elif key == 'KEY_HOME':
             # go to left
             self.caret.x = 0
-        elif key == 'KEY_END' or key == chr(455) or key == 'KEY_C1':
+        elif key == 'KEY_END':
             # go to right
             self.caret.x = self.buffer.get_line_length(self.caret.y)
         elif key in ALLOWED_CHARS:
@@ -330,45 +321,42 @@ class Editor:
             self.select_end_pos = self.caret.copy()           
 
     def parse_select(self, key):
-        if key == chr(27):
-            # escape
+        if key == 'KEY_ESCAPE':
             self.text_selected = False
             self.mode = MODE_COMMAND
         elif key in ALLOWED_CHARS:
             if len(self.cur_command) < MAX_COMMAND_LENGTH:
                 self.cur_command += key
-        elif key == '\b' or key == 'KEY_BACKSPACE':
+        elif key == 'KEY_BACKSPACE':
             self.cur_command = self.cur_command[ : -1]
-        elif key == chr(452) or key == 'KEY_LEFT' or key == 'KEY_B1' or key == '\b' or key == 'KEY_BACKSPACE':
+        elif key in ['KEY_LEFT', 'KEY_BACKSPACE']:
             self.caret.move_left(self.buffer)
             self.calculate_selection()
-        elif key == chr(454) or key == 'KEY_RIGHT' or key == 'KEY_B3' or key == ' ':
+        elif key in ['KEY_RIGHT', ' ']:
             self.caret.move_right(self.buffer)
             self.calculate_selection()
-        elif key == chr(450) or key == 'KEY_UP' or key == 'KEY_A2':
+        elif key == 'KEY_UP':
             self.caret.move_up(self.buffer)
             self.calculate_selection()
-        elif key == chr(456) or key == 'KEY_DOWN' or key == 'KEY_C2':
+        elif key == 'KEY_DOWN':
             self.caret.move_down(self.buffer)
             self.calculate_selection()
-        elif key == 'KEY_PPAGE' or key == chr(451) or key == 'KEY_A3':
-            # page up
+        elif key == 'KEY_PAGE_UP':
             self.caret = Position(0, 0)
             self.calculate_selection()
-        elif key == 'KEY_NPAGE' or key == chr(457) or key == 'KEY_C3':
-            # page down
+        elif key == 'KEY_PAGE_DOWN':
             self.caret.y = self.buffer.get_text_height() - 1
             self.caret.x = self.buffer.get_line_length(self.caret.y)
             self.calculate_selection()
-        elif key == 'KEY_HOME' or key == chr(449) or key == 'KEY_A1':
+        elif key == 'KEY_HOME':
             # go to left
             self.caret.x = 0
             self.calculate_selection()
-        elif key == 'KEY_END' or key == chr(455) or key == 'KEY_C1':
+        elif key == 'KEY_END':
             # go to right
             self.caret.x = self.buffer.get_line_length(self.caret.y)
             self.calculate_selection()
-        elif key == '\n' or key == chr(13):
+        elif key == 'KEY_NEWLINE':
             try:
                 if self.parse_general_command(self.cur_command):
                     pass

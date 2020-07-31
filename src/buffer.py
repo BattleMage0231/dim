@@ -1,5 +1,6 @@
 from curses import *
 
+from keys import normalize_key
 from position import Position
 
 COLORS = [
@@ -102,7 +103,7 @@ class Buffer:
         return justified_left + [(' ' * padding, 2)] + justified_right + [('─' * self.width, 2)]
 
     def get_key(self):
-        return self.stdscr.getkey()
+        return normalize_key(self.stdscr.getkey())
 
     def display_text(self, text):
         """Displays an array of strings to the screen. Waits for user input before continuing"""
@@ -112,7 +113,7 @@ class Buffer:
         for line in text[1 : ]:
             self.stdscr.addstr(line)
             self.stdscr.addstr('\n ')
-        self.stdscr.getkey()
+        self.get_key()
 
     def display_prompt(self, text):
         """
@@ -123,17 +124,16 @@ class Buffer:
         self.stdscr.refresh()
         key = self.get_key()
         res = ''
-        while key != '\n' and key != chr(13):
+        while key != 'KEY_NEWLINE':
             self.stdscr.erase()
             self.stdscr.addstr(' ' + text)
-            if key == '\b' or key == 'KEY_BACKSPACE':
+            if key == 'KEY_BACKSPACE':
                 res = res[ : -1]
             elif key in ALLOWED_CHARS:
                 res += key
             self.stdscr.addstr('\n ' + res)
             key = self.get_key()
         return res
-
 
     def display_confirm(self, text, password):
         """
@@ -149,11 +149,13 @@ class Buffer:
         """
         cur_index = 0
         key = None
-        while key != '\n' and key != chr(13):
-            if key == chr(450) or key == 'KEY_UP' or key == 'KEY_A2':
+        while key != 'KEY_NEWLINE':
+            with open('tests/log.txt', 'w') as log:
+                log.write(str(key))
+            if key == 'KEY_UP':
                 cur_index -= 1
                 cur_index = max(cur_index, 0)
-            elif key == chr(456) or key == 'KEY_DOWN' or key == 'KEY_C2':
+            elif key == 'KEY_DOWN':
                 cur_index += 1
                 cur_index = min(cur_index, len(choices) - 1)
             self.stdscr.erase()
@@ -163,7 +165,7 @@ class Buffer:
                 self.stdscr.addstr('\n ')
                 self.stdscr.addstr(value, color_pair(7 if index == cur_index else 1))
             self.stdscr.addstr('\n\n ') 
-            key = self.stdscr.getkey()  
+            key = self.get_key()  
         return cur_index    
 
     def flush(self, header, caret, select_start_pos, select_end_pos, scr_topleft, scr_bottomright):

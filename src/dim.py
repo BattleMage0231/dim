@@ -58,6 +58,8 @@ def main(stdscr):
             print('A fatal error has occured.\n')
             if args.debug:
                 print(traceback.format_exc())
+                with open('tests/log.txt', 'w') as log:
+                    log.write(traceback.format_exc())
     finally:
         print('Exited the editor.')
 
