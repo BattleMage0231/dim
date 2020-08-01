@@ -150,8 +150,6 @@ class Buffer:
         cur_index = 0
         key = None
         while key != 'KEY_NEWLINE':
-            with open('tests/log.txt', 'w') as log:
-                log.write(str(key))
             if key == 'KEY_UP':
                 cur_index -= 1
                 cur_index = max(cur_index, 0)
@@ -166,10 +164,10 @@ class Buffer:
                 self.stdscr.addstr(value, color_pair(7 if index == cur_index else 1))
             self.stdscr.addstr('\n\n ') 
             key = self.get_key()  
-        return cur_index    
+        return cur_index 
 
     def flush(self, header, caret, select_start_pos, select_end_pos, scr_topleft, scr_bottomright):
-        """Displays to the given screen"""
+        """Displays buffer to the screen"""
         self.update_screen_size()
         self.stdscr.erase()
         # header

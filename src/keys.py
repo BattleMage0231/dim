@@ -36,8 +36,6 @@ KEY_DICT = {
     '\t': 'KEY_TAB'
 }
 
-# key == '\n' or key == chr(13)
-
 def normalize_key(key):
     """Generates a consistent key name for key."""
     return KEY_DICT[key] if key in KEY_DICT else key

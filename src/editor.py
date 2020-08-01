@@ -1,9 +1,7 @@
 import os
-import string
 import sys
 import time
 import traceback
-import zlib
 from curses import *
 
 from buffer import Buffer, ALLOWED_CHARS
@@ -193,15 +191,6 @@ class Editor:
             self.select_end_pos = self.caret.copy()
             self.text_selected = True
             self.last_selection_before = True
-        elif command == 'z':
-            caret, text = self.state_manager.undo()
-            self.caret = caret.copy()
-            self.buffer.load_text(text)
-        elif command == 'y':
-            caret, text = self.state_manager.redo()
-            if caret is not None and text is not None:
-                self.caret = caret.copy()
-                self.buffer.load_text(text)
         else:
             return False
         return True
@@ -249,6 +238,15 @@ class Editor:
                         self.caret.y, self.caret.x, self.caret.x + 1
                     )
                     self.push_state()
+                elif self.cur_command == 'z':
+                    caret, text = self.state_manager.undo()
+                    self.caret = caret.copy()
+                    self.buffer.load_text(text)
+                elif self.cur_command == 'y':
+                    caret, text = self.state_manager.redo()
+                    if caret is not None and text is not None:
+                        self.caret = caret.copy()
+                        self.buffer.load_text(text)
             finally:
                 self.cur_command = ''
 
@@ -393,6 +391,19 @@ class Editor:
                     self.mode = MODE_COMMAND
                     self.text_selected = False
                     self.push_state()
+                elif self.cur_command == 'z':
+                    caret, text = self.state_manager.undo()
+                    self.caret = caret.copy()
+                    self.buffer.load_text(text)
+                    self.mode = MODE_COMMAND
+                    self.text_selected = False
+                elif self.cur_command == 'y':
+                    caret, text = self.state_manager.redo()
+                    if caret is not None and text is not None:
+                        self.caret = caret.copy()
+                        self.buffer.load_text(text)
+                        self.mode = MODE_COMMAND
+                        self.text_selected = False
             finally:
                 self.cur_command = ''
 
