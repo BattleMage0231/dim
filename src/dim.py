@@ -4,7 +4,7 @@ import traceback
 import sys
 from curses import *
 
-from editor import Editor
+from utils.editor import Editor
 
 TUTORIAL_LENGTH = 2
 
@@ -35,7 +35,7 @@ def main(stdscr):
     args = parser.parse_args()
     try:
         if args.tutorial is not None:
-            resource_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tutorials')
+            resource_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tutorial')
             if not os.path.isdir(resource_dir):
                 print('The tutorials directory was not found!\n')
                 sys.exit(1)
@@ -45,8 +45,8 @@ def main(stdscr):
                 sys.exit(1)
             args.file = os.path.join(resource_dir, files[0])
             args.read_only = True
-        editor = Editor(stdscr, args)
-        editor.launch()
+        e = Editor(stdscr, args)
+        e.launch()
     except Exception as e:
         error_type = type(e)
         if error_type == SystemError:

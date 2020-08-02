@@ -39,3 +39,6 @@ KEY_DICT = {
 def normalize_key(key):
     """Generates a consistent key name for key."""
     return KEY_DICT[key] if key in KEY_DICT else key
+
+def is_char(key):
+    return key.isprintable() and len(key) == 1

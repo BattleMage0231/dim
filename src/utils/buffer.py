@@ -1,7 +1,7 @@
 from curses import *
 
-from keys import normalize_key
-from position import Position
+from utils.keys import normalize_key, is_char
+from utils.position import Position
 
 COLORS = [
     (1, 7, 233),
@@ -12,8 +12,6 @@ COLORS = [
     (6, 150, 237),
     (7, 233, 7)
 ]
-
-ALLOWED_CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ '
 
 class Buffer:
     def __init__(self, stdscr):
@@ -129,7 +127,7 @@ class Buffer:
             self.stdscr.addstr(' ' + text)
             if key == 'KEY_BACKSPACE':
                 res = res[ : -1]
-            elif key in ALLOWED_CHARS:
+            elif is_char(key):
                 res += key
             self.stdscr.addstr('\n ' + res)
             key = self.get_key()
