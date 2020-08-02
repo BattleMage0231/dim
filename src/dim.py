@@ -4,35 +4,11 @@ import traceback
 import sys
 from curses import *
 
+from argparser import getargs
 from editor import Editor
 
-TUTORIAL_LENGTH = 2
-
 def main(stdscr):
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        'file',
-        nargs = '?',
-        default = None,
-        help = 'path to the file being edited'
-    )
-    parser.add_argument(
-        '-g', '--debug',
-        help = 'launch the editor in debug mode',
-        action = 'store_true'
-    )
-    parser.add_argument(
-        '-t', '--tutorial',
-        help = 'displays tutorial file at provided index',
-        type = int,
-        choices = range(1, TUTORIAL_LENGTH + 1)
-    )
-    parser.add_argument(
-        '--read-only',
-        help = 'indicate that the file cannot be written to',
-        action = 'store_true'
-    )
-    args = parser.parse_args()
+    args = getargs()
     try:
         if args.tutorial is not None:
             resource_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tutorial')
@@ -58,8 +34,6 @@ def main(stdscr):
             print('A fatal error has occured.\n')
             if args.debug:
                 print(traceback.format_exc())
-                with open('tests/log.txt', 'w') as log:
-                    log.write(traceback.format_exc())
     finally:
         print('Exited the editor.')
 

@@ -95,4 +95,4 @@ class Position:
     def __repr__(self):
         return f'({self.y}, {self.x})'
 
-NULL_POS = Position(None, None)
+NULLPOS = Position(None, None)

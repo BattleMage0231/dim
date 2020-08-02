@@ -1,7 +1,7 @@
 from curses import *
 
-from keys import normalize_key, is_char
-from position import Position
+from keys import *
+from position import *
 
 COLORS = [
     (1, 7, 233),
@@ -101,7 +101,7 @@ class Buffer:
         return justified_left + [(' ' * padding, 2)] + justified_right + [('─' * self.width, 2)]
 
     def get_key(self):
-        return normalize_key(self.stdscr.getkey())
+        return normalizekey(self.stdscr.getkey())
 
     def display_text(self, text):
         """Displays an array of strings to the screen. Waits for user input before continuing"""
@@ -127,7 +127,7 @@ class Buffer:
             self.stdscr.addstr(' ' + text)
             if key == 'KEY_BACKSPACE':
                 res = res[ : -1]
-            elif is_char(key):
+            elif ischar(key):
                 res += key
             self.stdscr.addstr('\n ' + res)
             key = self.get_key()

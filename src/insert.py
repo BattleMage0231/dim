@@ -1,7 +1,7 @@
 from base import *
 from buffer import Buffer
-from keys import normalize_key, is_char
-from position import Position, NULL_POS
+from keys import *
+from position import *
 from state import StateManager
 
 class InsertMode(Mode):
@@ -59,9 +59,9 @@ class InsertMode(Mode):
         elif key == 'KEY_END':
             # go to right
             self.caret.x = self.buffer.get_line_length(self.caret.y)
-        elif is_char(key):
+        elif ischar(key):
             # allowed text characters
             self.buffer.insert(self.caret.y, self.caret.x, key)
             self.caret.x += 1 
             self.push_state()
-        return self.name
+        return MODE_INSERT

@@ -8,8 +8,8 @@ from base import *
 from buffer import Buffer
 from command import CommandMode
 from insert import InsertMode
-from keys import normalize_key, is_char
-from position import Position, NULL_POS
+from keys import *
+from position import *
 from select import SelectMode
 from state import StateManager
 
@@ -157,3 +157,6 @@ class Editor:
                     self.mode = MODE_BY_NAME[new_mode](*self.mode.get_properties())
                 self.sync()
             self.display()
+
+if __name__ == '__main__':
+    print('This is a helper file used by dim. If you are looking to launch the editor, try dim.py')

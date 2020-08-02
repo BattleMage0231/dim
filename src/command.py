@@ -3,8 +3,8 @@ import sys
 
 from base import *
 from buffer import Buffer
-from keys import normalize_key, is_char
-from position import Position, NULL_POS
+from keys import *
+from position import *
 from state import StateManager
 
 class CommandMode(Mode):
@@ -14,48 +14,12 @@ class CommandMode(Mode):
         self.cur_command = ''
 
     def parse_command(self, command):
-        if command == 'i':
-            # change to insert mode
-            return MODE_INSERT
-        elif command == 's':
-            if self.args.read_only:
-                self.buffer.display_text([
-                    'This file cannot be written to. The editor may have been launched in read only mode.'
-                ])
-                return self.name
-            if self.debug_mode:
-                res = self.buffer.display_confirm(
-                    'Confirm that you want to save the file (type \'save\'): ',
-                    'save'
-                )
-                if not res:
-                    # return without confirmation
-                    return self.name
-            if self.args.file is None:
-                self.args.file = self.buffer.display_prompt('Enter the name of the file: ')
-                self.file_name = os.path.basename(self.args.file)
-                try:
-                    if not os.path.isfile(self.args.file):
-                        open(self.args.file, 'a').close()
-                except:
-                    print('An error occured when creating the file.\n')
-                    sys.exit(1)
-            try:
-                if self.args.file is not None:
-                    if not os.path.isfile(self.args.file): 
-                        raise FileNotFoundError
-                    with open(self.args.file, 'w') as edit_file:
-                        edit_file.write(self.buffer.get_content())
-            except (FileNotFoundError, PermissionError, OSError):
-                print('The current file can no longer be found.\n')
-                sys.exit(1)
-            except UnicodeDecodeError:
-                print('The encoding of the file is not supported.\n')
-                sys.exit(1)
-            self.state_manager.saved = True
-        elif command == 'v':
-            return MODE_SELECT
-        elif command == 'x':
+        # try to parse a general command
+        res = self.parse_general_command(command)
+        if res is not None:
+            return res
+        # try specific commands
+        if command == 'x':
             self.buffer.delete_substr(
                 self.caret.y, self.caret.x, self.caret.x + 1
             )
@@ -69,7 +33,7 @@ class CommandMode(Mode):
             if caret is not None and text is not None:
                 self.caret = caret.copy()
                 self.buffer.load_text(text)
-        return self.name
+        return MODE_COMMAND
 
     def parse_key(self, key):
         if key == 'KEY_ESCAPE':
@@ -79,7 +43,7 @@ class CommandMode(Mode):
                     'y'
                 )
                 if not res:
-                    return self.name
+                    return MODE_COMMAND
             sys.exit(0)
         elif key == 'KEY_BACKSPACE':
             self.cur_command = self.cur_command[ : -1]
@@ -107,7 +71,7 @@ class CommandMode(Mode):
                 return self.parse_command(self.cur_command)
             finally:
                 self.cur_command = ''
-        elif is_char(key):
+        elif ischar(key):
             if len(self.cur_command) < MAX_COMMAND_LENGTH:
                 self.cur_command += key
-        return self.name
+        return MODE_COMMAND
