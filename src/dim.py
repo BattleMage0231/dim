@@ -4,7 +4,7 @@ import traceback
 import sys
 from curses import *
 
-from utils.editor import Editor
+from editor import Editor
 
 TUTORIAL_LENGTH = 2
 

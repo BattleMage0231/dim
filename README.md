@@ -28,10 +28,10 @@ Note: you may want to use a virtual environment to install these dependencies.
 # Windows:
 pip install windows-curses
 pip install pyinstaller # or a similar tool
-pyinstaller src/dim.py --add-data "src/debug/*;debug" --add-data "src/resources/*;resources"
+pyinstaller src/dim.py --add-data "src/debug/*;debug" --add-data "src/tutorial/*;tutorial"
 # Mac/Linux
 pip install pyinstaller # or a similar tool
-pyinstaller src/dim.py --add-data "src/debug/*:debug" --add-data "src/resources/*:resources"
+pyinstaller src/dim.py --add-data "src/debug/*:debug" --add-data "src/tutorial/*:tutorial"
 ```
 
 This should build a dist folder and inside it a dim folder. Your executable will be found in the dim folder.

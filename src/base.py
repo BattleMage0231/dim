@@ -2,6 +2,11 @@ import os
 
 MAX_COMMAND_LENGTH = 20
 
+# mode constants
+MODE_COMMAND = 'COMMAND'
+MODE_INSERT = 'INSERT'
+MODE_SELECT = 'SELECT'
+
 class Mode:
     def __init__(self, buffer, state_manager, caret, file_name, args):
         self.buffer = buffer

@@ -4,21 +4,28 @@ import time
 import traceback
 from curses import *
 
-import mode.command as command_mode
-import mode.insert as insert_mode
-import mode.select as select_mode
-from utils.buffer import Buffer
-from utils.keys import normalize_key, is_char
-from utils.position import Position, NULL_POS
-from utils.state import StateManager
+from base import *
+from buffer import Buffer
+from command import CommandMode
+from insert import InsertMode
+from keys import normalize_key, is_char
+from position import Position, NULL_POS
+from select import SelectMode
+from state import StateManager
 
 ### TODO add syntax highlighting (highlighting overrides syntax highlighting) ###
+
+MODE_BY_NAME = {
+    MODE_COMMAND: CommandMode,
+    MODE_INSERT: InsertMode,
+    MODE_SELECT: SelectMode
+}
 
 class Editor:
     def __init__(self, stdscr, args):
         self.args = args
         self.debug_mode = args.debug
-        self.script_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')
+        self.script_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)))
         # set initial values
         self.buffer = Buffer(stdscr)
         self.state_manager = StateManager()
@@ -87,11 +94,11 @@ class Editor:
             self.buffer.get_header(
                 self.file_name,
                 self.mode.name,
-                self.mode.cur_command if type(self.mode) in [command_mode.CommandMode, select_mode.SelectMode] else ''
+                self.mode.cur_command if self.mode.name in [MODE_COMMAND, MODE_SELECT] else ''
             ),
             self.caret,
-            self.mode.select_start_pos if type(self.mode) == select_mode.SelectMode else None,
-            self.mode.select_end_pos if type(self.mode) == select_mode.SelectMode else None,
+            self.mode.select_start_pos if self.mode.name == MODE_SELECT else None,
+            self.mode.select_end_pos if self.mode.name == MODE_SELECT else None,
             self.scr_topleft,
             self.scr_bottomright
         )
@@ -132,7 +139,8 @@ class Editor:
             self.buffer.display_text([
                 'The editor has been opened in read only mode. Press any key to continue.'
             ])
-        self.mode = command_mode.CommandMode(
+        # startup mode
+        self.mode = CommandMode(
             self.buffer, self.state_manager, self.caret, self.file_name, self.args
         )
         self.display()
@@ -144,6 +152,8 @@ class Editor:
                 self.buffer.update_screen_size()
                 self.resize_screen()
             else:
-                self.mode = self.mode.parse_key(key)
+                new_mode = self.mode.parse_key(key)
+                if self.mode.name != new_mode:
+                    self.mode = MODE_BY_NAME[new_mode](*self.mode.get_properties())
                 self.sync()
             self.display()

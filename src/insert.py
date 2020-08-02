@@ -1,24 +1,21 @@
-from mode.base import Mode, MAX_COMMAND_LENGTH
-import mode.command as command_mode
-import mode.insert as insert_mode
-import mode.select as select_mode
-from utils.buffer import Buffer
-from utils.keys import normalize_key, is_char
-from utils.position import Position, NULL_POS
-from utils.state import StateManager
+from base import *
+from buffer import Buffer
+from keys import normalize_key, is_char
+from position import Position, NULL_POS
+from state import StateManager
 
 class InsertMode(Mode):
     def __init__(self, buffer, state_manager, caret, file_name, args):
         super().__init__(buffer, state_manager, caret, file_name, args)
-        self.name = 'INSERT'
+        self.name = MODE_INSERT
 
     def parse_command(self, command):
         # insert mode has no commands
-        return self
+        return MODE_INSERT
 
     def parse_key(self, key):
         if key == 'KEY_ESCAPE':
-            return command_mode.CommandMode(*self.get_properties())
+            return MODE_COMMAND
         elif key == 'KEY_BACKSPACE':
             if self.caret.x != 0:
                 self.buffer.delete_substr(
@@ -67,4 +64,4 @@ class InsertMode(Mode):
             self.buffer.insert(self.caret.y, self.caret.x, key)
             self.caret.x += 1 
             self.push_state()
-        return self
+        return self.name

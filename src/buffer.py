@@ -1,7 +1,7 @@
 from curses import *
 
-from utils.keys import normalize_key, is_char
-from utils.position import Position
+from keys import normalize_key, is_char
+from position import Position
 
 COLORS = [
     (1, 7, 233),
