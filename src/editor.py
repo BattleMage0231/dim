@@ -21,6 +21,9 @@ MODE_BY_NAME = {
     MODE_SELECT: SelectMode
 }
 
+# maximum amount of characters for undo and redo to be allowed
+DISALLOW_STATE_LIMIT = 5000000
+
 class Editor:
     def __init__(self, stdscr, args):
         self.args = args
@@ -34,11 +37,15 @@ class Editor:
         self.scr_bottomright = Position(self.buffer.get_height() - 2, self.buffer.get_width() - 1) # inclusive
         self.file_name = 'None'
         self.mode = None
+        self.allow_state = True
         # try to find a file
         try:
-            if args.file is not None:
+            if self.args.file is not None:
                 with open(args.file, 'r') as edit_file:
-                    self.buffer.load_text(edit_file.read())
+                    text = edit_file.read()
+                    if len(text) > DISALLOW_STATE_LIMIT:
+                        self.allow_state = False
+                    self.buffer.load_text(text)
                 self.file_name = os.path.basename(args.file)
         except (FileNotFoundError, PermissionError, OSError) as e:
             print('The path given is invalid or inaccessible.\n')
@@ -46,8 +53,10 @@ class Editor:
         except UnicodeDecodeError as e:
             print('The encoding of the file is not supported.\n')
             sys.exit(1)
+        self.args.allow_state = self.allow_state
         # push initial state
-        self.state_manager.push_state(self.caret.copy(), self.buffer.get_content())
+        if self.allow_state:
+            self.state_manager.push_state(self.caret.copy(), self.buffer.get_content())
 
     def sync(self):
         """
@@ -102,6 +111,20 @@ class Editor:
     def get_key(self):
         return self.buffer.get_key()
 
+    def get_startup_msg(self):
+        message = []
+        if self.args.read_only:
+            message.extend([
+                'The editor has been opened in read only mode.', ''
+            ])
+        if not self.allow_state:
+            message.extend([
+                'The file size is large. Undo and redo are disabled.', ''
+            ])
+        if message:
+            message.extend(['Press any key to continue.', ''])
+        return message
+
     def launch(self):
         if self.debug_mode:
             if self.args.file is None:
@@ -123,16 +146,17 @@ class Editor:
                     with open(file_name, 'r') as text:
                         self.buffer.load_text(text.read())
                 self.state_manager.clear_stack()
-                self.state_manager.push_state(self.caret.copy(), self.buffer.get_content())
+                if self.allow_state:
+                    self.state_manager.push_state(self.caret.copy(), self.buffer.get_content())
             else:
                 self.buffer.display_text([
                     'You have launched the editor in debug mode...',
                     'Press any key to continue.'
                 ])
-        if self.args.read_only:
-            self.buffer.display_text([
-                'The editor has been opened in read only mode. Press any key to continue.'
-            ])
+        # startup message
+        startup_msg = self.get_startup_msg()
+        if startup_msg:
+            self.buffer.display_text(startup_msg)
         # startup mode
         self.mode = CommandMode(
             self.buffer, self.state_manager, self.caret, self.file_name, self.args

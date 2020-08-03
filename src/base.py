@@ -22,7 +22,8 @@ class Mode:
         return (self.buffer, self.state_manager, self.caret, self.file_name, self.args)
 
     def push_state(self):
-        self.state_manager.push_state(self.caret, self.buffer.get_content())
+        if self.args.allow_state:
+            self.state_manager.push_state(self.caret, self.buffer.get_content())
 
     def parse_general_command(self, command):
         if command == 'i':
@@ -66,6 +67,21 @@ class Mode:
             self.state_manager.saved = True
         elif command == 'v':
             return MODE_SELECT
+        elif command == 'z':
+            if not self.args.allow_state:
+                return MODE_COMMAND
+            caret, text = self.state_manager.undo()
+            self.caret = caret.copy()
+            self.buffer.load_text(text)
+            return MODE_COMMAND
+        elif command == 'y':
+            if not self.args.allow_state:
+                return MODE_COMMAND
+            caret, text = self.state_manager.redo()
+            if caret is not None and text is not None:
+                self.caret = caret.copy()
+                self.buffer.load_text(text)
+                return MODE_COMMAND
         else:
             return None
         return self.name

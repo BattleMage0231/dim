@@ -69,17 +69,6 @@ class SelectMode(Mode):
                     self.buffer.pop_line(index)
             self.push_state()
             return MODE_COMMAND
-        elif command == 'z':
-            caret, text = self.state_manager.undo()
-            self.caret = caret.copy()
-            self.buffer.load_text(text)
-            return MODE_COMMAND
-        elif command == 'y':
-            caret, text = self.state_manager.redo()
-            if caret is not None and text is not None:
-                self.caret = caret.copy()
-                self.buffer.load_text(text)
-                return MODE_COMMAND
         return MODE_SELECT
 
     def parse_key(self, key):

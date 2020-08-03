@@ -22,15 +22,6 @@ class CommandMode(Mode):
         if command == 'x':
             self.buffer.delete_substr(self.caret.y, self.caret.x, self.caret.x + 1)
             self.push_state()
-        elif command == 'z':
-            caret, text = self.state_manager.undo()
-            self.caret = caret.copy()
-            self.buffer.load_text(text)
-        elif command == 'y':
-            caret, text = self.state_manager.redo()
-            if caret is not None and text is not None:
-                self.caret = caret.copy()
-                self.buffer.load_text(text)
         return MODE_COMMAND
 
     def parse_key(self, key):

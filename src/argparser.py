@@ -1,6 +1,7 @@
 import argparse
 import hashlib
 import os
+import sys
 
 class Argparser:
     SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -51,4 +52,7 @@ class Argparser:
                 sys.exit(1)
             res.file = file_path
             res.read_only = True
+        if res.file is not None and not os.path.isfile(res.file):
+            print('The file doesn\'t exist!\n')
+            sys.exit(1)
         return res
