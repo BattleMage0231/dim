@@ -53,13 +53,9 @@ class Editor:
         """
         Syncs some variables between this object and its Mode object.
         """
-        self.buffer = self.mode.buffer
-        self.state_manager = self.mode.state_manager
-        self.caret = self.mode.caret
-        self.file_name = self.mode.file_name
-        self.args = self.mode.args
-        self.script_dir = self.mode.args
-        self.debug_mode = self.mode.debug_mode
+        attrs = ['buffer', 'state_manager', 'caret', 'file_name', 'args', 'script_dir', 'debug_mode']
+        for attr in attrs:
+            setattr(self, attr, getattr(self.mode, attr))
 
     def resize_screen(self):
         """
@@ -116,7 +112,6 @@ class Editor:
                 choice = self.buffer.display_choose(
                     [
                         'You have launched the editor in debug mode...',
-                        '',
                         'Test documents:'
                     ],
                     [text for text in text_list]
@@ -132,7 +127,6 @@ class Editor:
             else:
                 self.buffer.display_text([
                     'You have launched the editor in debug mode...',
-                    '',
                     'Press any key to continue.'
                 ])
         if self.args.read_only:

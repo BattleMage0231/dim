@@ -20,9 +20,7 @@ class CommandMode(Mode):
             return res
         # try specific commands
         if command == 'x':
-            self.buffer.delete_substr(
-                self.caret.y, self.caret.x, self.caret.x + 1
-            )
+            self.buffer.delete_substr(self.caret.y, self.caret.x, self.caret.x + 1)
             self.push_state()
         elif command == 'z':
             caret, text = self.state_manager.undo()

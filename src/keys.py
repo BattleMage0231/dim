@@ -1,4 +1,4 @@
-KEY_DICT = {
+KEYDICT = {
     # escape
     chr(27): 'KEY_ESCAPE',
     # backspace
@@ -38,7 +38,7 @@ KEY_DICT = {
 
 def normalizekey(key):
     """Generates a consistent key name for key."""
-    return KEY_DICT[key] if key in KEY_DICT else key
+    return KEYDICT[key] if key in KEYDICT else key
 
 def ischar(key):
     return key.isprintable() and len(key) == 1

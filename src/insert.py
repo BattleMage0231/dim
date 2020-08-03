@@ -10,24 +10,21 @@ class InsertMode(Mode):
         self.name = MODE_INSERT
 
     def parse_command(self, command):
-        # insert mode has no commands
-        return MODE_INSERT
+        raise NotImplementedError('insert mode has no commands')
 
     def parse_key(self, key):
         if key == 'KEY_ESCAPE':
             return MODE_COMMAND
         elif key == 'KEY_BACKSPACE':
             if self.caret.x != 0:
-                self.buffer.delete_substr(
-                    self.caret.y, self.caret.x - 1, self.caret.x
-                )
+                self.buffer.delete_substr(self.caret.y, self.caret.x - 1, self.caret.x)
                 self.caret.move_left(self.buffer)
                 self.push_state()
             elif self.caret.y != 0:
                 # concatenate two lines
-                self.caret.x = self.buffer.get_line_length(self.caret.y - 1)
-                self.buffer.join(self.caret.y - 1, self.caret.y)
                 self.caret.y -= 1
+                self.caret.x = self.buffer.get_line_length(self.caret.y)
+                self.buffer.join(self.caret.y, self.caret.y + 1)
                 self.push_state()
         elif key == 'KEY_TAB':
             self.buffer.insert(self.caret.y, self.caret.x, ' ' * 4)

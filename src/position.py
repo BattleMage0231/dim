@@ -5,17 +5,12 @@ class Position:
 
     def move_left(self, buffer, spaces = 1):
         grid = buffer.get_lines()
-        if not grid:
-            return
         self.x -= spaces
         if self.x >= 0:
             return
         while self.x < 0 and self.y > 0:
             self.y -= 1
-            if len(grid[self.y]) == 0:
-                self.x += 1
-            else:
-                self.x += len(grid[self.y])
+            self.x += max(1, len(grid[self.y]))
         if self.y < 0 or self.x < 0:
             self.y = self.x = 0
         else:
@@ -23,17 +18,12 @@ class Position:
 
     def move_right(self, buffer, spaces = 1):
         grid = buffer.get_lines()
-        if not grid:
-            return
         self.x += spaces
         if self.x <= len(grid[self.y]):
             return
         while self.y < len(grid) - 1 and spaces > 0:
             self.y += 1
-            if len(grid[self.y]) == 0:
-                spaces -= 1
-            else:
-                spaces -= len(grid[self.y])
+            spaces -= max(1, len(grid[self.y]))
         if self.y >= len(grid):
             self.y = len(grid) - 1
             self.x = len(grid[self.y])
@@ -42,20 +32,12 @@ class Position:
 
     def move_up(self, buffer, spaces = 1):
         grid = buffer.get_lines()
-        if not grid:
-            return
-        self.y -= spaces
-        if self.y < 0:
-            self.y = 0
+        self.y = max(self.y - spaces, 0)
         self.x = min(len(grid[self.y]), self.x)
 
     def move_down(self, buffer, spaces = 1):
         grid = buffer.get_lines()
-        if not grid:
-            return
-        self.y += spaces
-        if self.y >= len(grid):
-            self.y = len(grid) - 1
+        self.y = min(self.y + spaces, len(grid) - 1)
         self.x = min(len(grid[self.y]), self.x)
 
     def is_before(self, other):

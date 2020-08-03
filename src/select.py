@@ -64,9 +64,7 @@ class SelectMode(Mode):
                 )
                 # delete starting of end
                 spaces = self.select_end_pos.x + 1
-                self.buffer.delete_substr(
-                    index, 0, spaces
-                )
+                self.buffer.delete_substr(index, 0, spaces)
                 if self.buffer.get_line(index) == '':
                     self.buffer.pop_line(index)
             self.push_state()

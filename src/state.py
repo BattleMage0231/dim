@@ -7,10 +7,10 @@ class StateManager:
         self.undo_ptr = -1
 
     def compress_text(self, text):
-        return zlib.compress(text.encode('utf8'))
+        return zlib.compress(text.encode())
 
     def decompress_text(self, text):
-        return zlib.decompress(text).decode('utf8')
+        return zlib.decompress(text).decode()
 
     def push_state(self, caret, text):
         self.saved = False
@@ -30,7 +30,7 @@ class StateManager:
             self.undo_ptr += 1
             caret, compressed = self.undo_stack[self.undo_ptr]
             return (caret, self.decompress_text(compressed))
-        return None, None
+        return (None, None)
 
     def clear_stack(self):
         self.undo_ptr = -1
