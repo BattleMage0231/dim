@@ -41,4 +41,4 @@ def normalizekey(key):
     return KEYDICT[key] if key in KEYDICT else key
 
 def ischar(key):
-    return key.isprintable() and len(key) == 1
+    return type(key) == str and key.isprintable() and len(key) == 1

@@ -13,6 +13,10 @@ COLORS = [
     (7, 233, 7)
 ]
 
+PADCHAR = ' '
+PAD_LEN = len(PADCHAR)
+HEADER_LEN = 2
+
 class Buffer:
     def __init__(self, stdscr):
         # set initial values
@@ -38,6 +42,12 @@ class Buffer:
 
     def get_width(self):
         return self.width
+
+    def screen_height(self):
+        return self.height - HEADER_LEN
+
+    def screen_width(self):
+        return self.width - PAD_LEN
 
     def get_text_height(self):
         return len(self.lines)
@@ -97,7 +107,7 @@ class Buffer:
             ('Mode: ' + mode,               5),
             (' ' * 10,                      2),
         ]
-        padding = (self.width - sum([len(i) for i, j in (justified_left + justified_right)]))
+        padding = (self.get_width() - sum([len(i) for i, j in (justified_left + justified_right)]))
         return justified_left + [(' ' * padding, 2)] + justified_right + [('─' * self.width, 2)]
 
     def get_key(self):
@@ -107,29 +117,25 @@ class Buffer:
         """Displays an array of strings to the screen. Waits for user input before continuing"""
         self.update_screen_size()
         self.stdscr.erase()
-        self.stdscr.addstr(' ' + text[0] + '\n ')
-        for line in text[1 : ]:
-            self.stdscr.addstr(line)
-            self.stdscr.addstr('\n ')
+        for line in text:
+            self.stdscr.addstr(f'{PADCHAR}{line}\n')
+        self.stdscr.addstr(PADCHAR)
         self.get_key()
 
     def display_prompt(self, text):
         """
         Displays a line of text to the screen and awaits a line of input, which is returned.
         """
-        self.stdscr.erase()
-        self.stdscr.addstr(' ' + text + '\n ')
-        self.stdscr.refresh()
-        key = self.get_key()
+        key = None
         res = ''
         while key != 'KEY_NEWLINE':
-            self.stdscr.erase()
-            self.stdscr.addstr(' ' + text)
             if key == 'KEY_BACKSPACE':
                 res = res[ : -1]
             elif ischar(key):
                 res += key
-            self.stdscr.addstr('\n ' + res)
+            self.stdscr.erase()
+            self.stdscr.addstr(f'{PADCHAR}{text}\n')
+            self.stdscr.addstr(f'{PADCHAR}{res}')
             key = self.get_key()
         return res
 
@@ -149,18 +155,17 @@ class Buffer:
         key = None
         while key != 'KEY_NEWLINE':
             if key == 'KEY_UP':
-                cur_index -= 1
-                cur_index = max(cur_index, 0)
+                cur_index = max(cur_index - 1, 0)
             elif key == 'KEY_DOWN':
-                cur_index += 1
-                cur_index = min(cur_index, len(choices) - 1)
+                cur_index = min(cur_index + 1, len(choices) - 1)
             self.stdscr.erase()
             for line in text:
-                self.stdscr.addstr(' ' + line + '\n')
+                self.stdscr.addstr(f'{PADCHAR}{line}\n')
             for index, value in enumerate(choices):
-                self.stdscr.addstr('\n ')
+                self.stdscr.addstr('\n')
+                self.stdscr.addstr(PADCHAR)
                 self.stdscr.addstr(value, color_pair(7 if index == cur_index else 1))
-            self.stdscr.addstr('\n\n ') 
+            self.stdscr.addstr(f'\n\n{PADCHAR}') 
             key = self.get_key()  
         return cur_index 
 
@@ -175,11 +180,11 @@ class Buffer:
         # display lines
         displayed_lines = self.lines[scr_topleft.y : min(len(self.lines), scr_bottomright.y)]
         for index, line in enumerate(displayed_lines):
-            self.stdscr.addstr(' ')
+            self.stdscr.addstr(PADCHAR)
             if len(line) >= scr_topleft.x:
                 # inclusive, position of line start and line end of displayed line
                 ln_start = Position(scr_topleft.y + index, scr_topleft.x)
-                ln_end = Position(scr_topleft.y + index, scr_topleft.x + self.width - 1)
+                ln_end = Position(scr_topleft.y + index, scr_topleft.x + self.screen_width())
                 displayed_line = line[ln_start.x : min(len(line), scr_bottomright.x - 1)]
                 if text_selected:
                     # whether start position and end position of line are between selection
@@ -219,4 +224,4 @@ class Buffer:
                     self.stdscr.addstr(displayed_line)
             if index != len(displayed_lines) - 1:
                 self.stdscr.addstr('\n')
-        self.stdscr.move(caret.y - scr_topleft.y + 2, caret.x - scr_topleft.x + 1)
+        self.stdscr.move(caret.y - scr_topleft.y + HEADER_LEN, caret.x - scr_topleft.x + PAD_LEN)

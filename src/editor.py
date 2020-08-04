@@ -5,7 +5,7 @@ import traceback
 from curses import *
 
 from base import *
-from buffer import Buffer
+from buffer import *
 from command import CommandMode
 from insert import InsertMode
 from keys import *
@@ -34,7 +34,7 @@ class Editor:
         self.state_manager = StateManager()
         self.caret = Position(0, 0)
         self.scr_topleft = Position(0, 0) # inclusive
-        self.scr_bottomright = Position(self.buffer.get_height() - 2, self.buffer.get_width() - 1) # inclusive
+        self.scr_bottomright = Position(self.buffer.screen_height(), self.buffer.screen_width()) # inclusive
         self.file_name = 'None'
         self.mode = None
         self.allow_state = True
@@ -73,7 +73,7 @@ class Editor:
         # there was much more code here previously which adjusted the screen
         # however, it is much more easy and efficient to just rely on the scroll_screen function
         self.scr_topleft = Position(0, 0)
-        self.scr_bottomright = Position(self.buffer.get_height() - 2, self.buffer.get_width() - 1)
+        self.scr_bottomright = Position(self.buffer.screen_height(), self.buffer.screen_width())
 
     def scroll_screen(self):
         # scroll up down
@@ -154,8 +154,7 @@ class Editor:
                     'Press any key to continue.'
                 ])
         # startup message
-        startup_msg = self.get_startup_msg()
-        if startup_msg:
+        if startup_msg := self.get_startup_msg():
             self.buffer.display_text(startup_msg)
         # startup mode
         self.mode = CommandMode(

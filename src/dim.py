@@ -10,11 +10,12 @@ def main(stdscr):
         Editor(stdscr, args).launch()
     except Exception as e:
         error_type = type(e)
+        error_msg = str(e)
         if error_type == SystemError:
             pass
         elif error_type == NotImplementedError:
             print('This feature hasn\'t been implemented yet.\n')
-            print('Feature: {}\n'.format(str(e)))
+            print('Feature: {error_msg}\n')
         else:
             print('A fatal error has occured.\n')
             if args.debug:

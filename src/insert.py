@@ -1,5 +1,5 @@
 from base import *
-from buffer import Buffer
+from buffer import *
 from keys import *
 from position import *
 from state import StateManager
