@@ -33,9 +33,9 @@ class SelectMode(Mode):
             # shrink collection left
             self.select_end_pos = self.caret.copy()
     
-    def parse_command(self, command):
+    def parse_command(self, command, args = []):
         # try to parse a general command
-        res = self.parse_general_command(command)
+        res = self.parse_general_command(command, args)
         if res is not None:
             return res
         # try specific commands
@@ -105,7 +105,7 @@ class SelectMode(Mode):
             self.calculate_selection()
         elif key == 'KEY_NEWLINE':
             try:
-                return self.parse_command(self.cur_command)
+                return self.parse_command(*self.parse_args(self.cur_command))
             finally:
                 self.cur_command = ''
         elif ischar(key):

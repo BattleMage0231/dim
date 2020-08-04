@@ -13,14 +13,18 @@ class CommandMode(Mode):
         self.name = MODE_COMMAND
         self.cur_command = ''
 
-    def parse_command(self, command):
+    def parse_command(self, command, args = []):
         # try to parse a general command
-        res = self.parse_general_command(command)
+        res = self.parse_general_command(command, args)
         if res is not None:
             return res
         # try specific commands
         if command == 'x':
-            self.buffer.delete_substr(self.caret.y, self.caret.x, self.caret.x + 1)
+            try:
+                amt = int(args[0])
+            except:
+                amt = 1
+            self.buffer.delete_substr(self.caret.y, self.caret.x, self.caret.x + amt)
             self.push_state()
         return MODE_COMMAND
 
@@ -57,7 +61,7 @@ class CommandMode(Mode):
             self.caret.x = self.buffer.get_line_length(self.caret.y)
         elif key == 'KEY_NEWLINE':
             try:
-                return self.parse_command(self.cur_command)
+                return self.parse_command(*self.parse_args(self.cur_command))
             finally:
                 self.cur_command = ''
         elif ischar(key):

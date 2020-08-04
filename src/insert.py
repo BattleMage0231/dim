@@ -9,7 +9,7 @@ class InsertMode(Mode):
         super().__init__(buffer, state_manager, caret, file_name, args)
         self.name = MODE_INSERT
 
-    def parse_command(self, command):
+    def parse_command(self, command, args = []):
         raise NotImplementedError('insert mode has no commands')
 
     def parse_key(self, key):

@@ -1,4 +1,5 @@
 import os
+import sys
 
 MAX_COMMAND_LENGTH = 20
 
@@ -25,7 +26,28 @@ class Mode:
         if self.args.allow_state:
             self.state_manager.push_state(self.caret, self.buffer.get_content())
 
-    def parse_general_command(self, command):
+    def parse_args(self, command):
+        """
+        Parses the arguments of a command.
+        Commands are of the form KEYWORD[ARG1][ARG2][ARG3].
+        """
+        try:
+            start = command.find('[')
+            if start == -1:
+                return (command.strip(), [])
+            base_cmd = command[ : start].strip()
+            assert base_cmd # base command must not be empty
+            args = []
+            while start > -1:
+                end = command.index(']', start + 1) # throw exception if not found
+                args.append(command[start + 1 : end])
+                start = command.find('[', end + 1)
+            return (base_cmd, args)
+        except:
+            # bracket mismatch
+            return ('', [])
+
+    def parse_general_command(self, command, args = []):
         if command == 'i':
             # change to insert mode
             return MODE_INSERT
@@ -44,7 +66,10 @@ class Mode:
                     # return without confirmation
                     return self.name
             if self.args.file is None:
-                self.args.file = self.buffer.display_prompt('Enter the name of the file: ')
+                if args:
+                    self.args.file = args[0]
+                else:
+                    self.args.file = self.buffer.display_prompt('Enter the name of the file: ')
                 self.file_name = os.path.basename(self.args.file)
                 try:
                     if not os.path.isfile(self.args.file):
