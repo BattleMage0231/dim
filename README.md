@@ -1,6 +1,8 @@
 # Dim
 
-Simple terminal text editor based on Vim
+Dim is a simple terminal-based text editor inspired by Vim. Its aim is to provide an easier and less functional alternative to learning Vim.
+
+![](assets/screenshot.PNG)
 
 # Installation
 
