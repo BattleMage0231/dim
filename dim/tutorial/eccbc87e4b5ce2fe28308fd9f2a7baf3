@@ -1,0 +1,18 @@
+Tutorial File #3
+
+The Structure of a Command
+
+Each command in Dim has a unique string code and may take arguments.
+Arguments are strings that you can specifiy along with the command code to modify its behavior.
+A command is represented in the form KEYWORD[ARG1][ARG2]...[ARGN].
+Some commands need arguments, while some do not.
+
+General and Specific Commands
+
+Commands can be inputted in Select and Command mode.
+Some commands function the same way in both modes. These are called general commands.
+Some commands vary their function depending on the mode.
+
+Quitting
+
+Press escape in Command mode to quit the editor.

@@ -4,34 +4,36 @@ Simple terminal text editor based on Vim
 
 # Installation
 
-## Precompiled Binary
+You must have Python 3.8 or higher to run Dim.
 
-There are two zip files that you can download for Windows and Mac/Linux and then extract in the releases tab. The executables can be found inside the folders.
+## Install via Pip
 
-There may also be zip files which contain compiled binaries that are bound inside a single executable. These executables seem to be significantly slower than the multifile version.
+To install using pip, run the following command.
+
+```bash
+pip install dim-editor
+```
+
+Then, you can launch the editor with
+```bash
+dim
+python -m dim
+```
 
 ## Building Manually
 
-First, download or clone this repository and navigate into the main folder with Python 3 and Pip installed.
+To build Dim manually, clone or download this repository and navigate into the main folder.
 
-To launch the editor with Python, run the following command.
-
-```bash
-python src/dim.py
-```
-
-To build the executable yourself, run the following commands.
-
-Note: you may want to use a virtual environment to install these dependencies.
+On Windows, you must run this command to install curses.
 
 ```bash
-# Windows:
-pip install windows-curses
-pip install pyinstaller # or a similar tool
-pyinstaller src/dim.py --add-data "src/debug/*;debug" --add-data "src/tutorial/*;tutorial"
-# Mac/Linux
-pip install pyinstaller # or a similar tool
-pyinstaller src/dim.py --add-data "src/debug/*:debug" --add-data "src/tutorial/*:tutorial"
+pip install -r win-requirements.txt
 ```
 
-This should build a dist folder and inside it a dim folder. Your executable will be found in the dim folder.
+You can run the editor with
+
+```bash
+python dim/dim.py
+```
+
+There are tools available to compile the Python application into an executable format. If you decide to use one of these tools, make sure that dim/debug and dim/tutorial are included as subdirectories.

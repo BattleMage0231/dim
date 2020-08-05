@@ -1,47 +1,34 @@
 Tutorial File #2
 
-EDITOR MODES
+Editor Modes
 
 Like Vim, Dim has different editor modes that can be used to do different things.
-
 One of these modes is Command, which you are in by default. In this mode, you can input and run commands.
-
 Another mode is Insert, where you can edit text.
-
 A third mode is Select, where you can select and manipulate a group of text.
 
-COMMAND MODE
+Command Mode
 
 In Command mode, the user can issue a series of commands that are executed.
-
 They may not, however, edit the text directly.
-
 To issue commands, simply type from the keyboard and press enter/return when done to execute.
 
-INSERT MODE
+Insert Mode
 
 In Insert mode, the user can edit text directly by typing. 
-
 They can also remove and split text by using backspace and enter/return.
-
 To switch to Insert mode from Command and Select mode, execute the command ```i```.
-
 To switch to Command mode from Insert mode, simply press escape.
 
-SELECT MODE
+Select Mode
 
 In Select mode, the user can select and manipulate a group of text.
-
 They can select text by using the arrow keys. They can not edit the text directly.
-
 Issuing commands is the same as Command mode.
-
 To switch to Select mode from Command mode, execute the command ```v```.
-
 Many Select mode commands work the exact same way as Command mode commands.
-
 To switch to Command mode from Select mode, simply press escape.
 
-QUITTING
+Quitting
 
 Press escape in Command mode to quit the editor.

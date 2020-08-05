@@ -1,0 +1,23 @@
+Tutorial File #4
+
+Useful General Commands
+
+The following is a list of general commands.
+- ```i``` to change to Insert mode
+- ```v``` to change to Select mode
+- ```s``` to save to a file (you may specify the file as the first argument)
+- ```z``` to undo your last change (doesn't work on extremely large files)
+- ```y``` to redo your last undo (doesn't work on extremely large files)
+
+Undo and Redo
+
+The ```z``` and ```y``` commands respectively allow you to undo and redo changes.
+Changes are stored as states, which are wrappers around tuples of (caret, text).
+These do not work with large files as compressing the text takes a long time. This results in extremely slow file editing.
+States are stored linearly in Dim as list data structure. A pointer is stored to the current state.
+Each new change advances the pointer and writes or overwrites a new state at its address.
+Each undo subtracts it by one element. Each redo increases it by one element. 
+
+Quitting
+
+Press escape in Command mode to quit the editor.

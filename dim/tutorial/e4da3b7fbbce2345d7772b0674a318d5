@@ -1,0 +1,14 @@
+Tutorial File #5
+
+Useful Specific Commands
+
+The following is a list of specific commands.
+Command Mode:
+- ```x``` deletes one character at the caret 
+(if specified, the first argument is the number of characters to delete until the end of the line)
+Select Mode:
+- ```x``` deletes the selection and returns you to Command Mode
+
+Quitting
+
+Press escape in Command mode to quit the editor.

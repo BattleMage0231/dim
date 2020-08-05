@@ -1,0 +1,22 @@
+Tutorial File #6
+
+Command Line Arguments
+
+Dim provides several useful command line arguments and flags. They are documented in terminal as follows.
+```
+usage: dim.py [-h] [-g] [-t {1,2,3,4,5}] [--read-only] [file]
+
+positional arguments:
+  file                  path to the file being edited
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -g, --debug           launch the editor in debug mode
+  -t, --tutorial
+                        displays tutorial file at provided index
+  --read-only           indicate that the file cannot be written to
+```
+
+Quitting
+
+Press escape in Command mode to quit the editor.
