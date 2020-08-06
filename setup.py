@@ -1,4 +1,5 @@
 import setuptools
+import sys
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -11,11 +12,19 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/BattleMage0231/dim",
-    packages=setuptools.find_packages(),
+    packages=["dim"],
+    package_data={"dim": ["debug/*", "tutorial/*"]},
+    include_package_data=True,
+    install_requires = (["windows-curses"] if sys.platform.startswith("win") else []),
+    python_requires='>=3.8',
+    entry_points={
+        "console_scripts": [
+            "dim = dim.dim:launch",
+        ],
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.8',
 )
